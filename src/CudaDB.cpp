@@ -18,8 +18,8 @@ int main(int argc, char**argv) {
 //	google::SetLogDestination(google::ERROR, logfile.c_str());
 //	google::SetLogDestination(google::FATAL, logfile.c_str());
 
-	cudadb::DB DB;
-	DB.open("www");
+    cudadb::DB DB;
+    DB.open("www");
 
-	return 0;
+    return 0;
 }

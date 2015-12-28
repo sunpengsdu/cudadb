@@ -10,14 +10,24 @@
 
 namespace cudadb {
 
+//! DB constructor
 DB::DB() {
-	initial_para("./cudadb.yaml");
+    initial_para("./cudadb.yaml");
 }
 
+//! DB constructor
+/*!
+  \param config_file configuration file path and name
+*/
 DB::DB(const std::string& config_file) {
-	initial_para(config_file);
+    initial_para(config_file);
 }
 
+//! Initial parameter in the DB
+/*!
+  \param config_file configuration file path and name
+  \return 0 if success
+*/
 int32_t DB::initial_para(const std::string& config_file) {
 	//The default parameters
 	page_size         = 1*1024*1024;      //1 MB
@@ -81,42 +91,53 @@ int32_t DB::initial_para(const std::string& config_file) {
 DB::~DB() {
 }
 
+//! Create a new DB
 int32_t DB::create_db() {
-	LOG(INFO) << "Create a new CudaDB: "
-			  << this->db_name;
-	return 0;
+    LOG(INFO) << "Create a new CudaDB: "
+              << this->db_name;
+    return 0;
 }
 
+//! Load an existed DB
 int32_t DB::load_db() {
-	LOG(INFO) << "Load an existed CudaDB: "
-			  << this->db_name;
-	return 0;
+    LOG(INFO) << "Load an existed CudaDB: "
+              << this->db_name;
+    return 0;
 }
 
+//! Open a DB, if it exists, load it; otherwise, create a DB with the name
+/*!
+    \param db_name the name of the db to open
+    \return 0 if success
+ */
 int32_t DB::open(const std::string& db_name) {
-	this->db_name = db_name;
-	if (db_exist(db_name)) {
-		load_db();
-	} else {
-		create_db();
-	}
-	return 0;
+    this->db_name = db_name;
+    if (db_exist(db_name)) {
+        load_db();
+    } else {
+        create_db();
+    }
+    return 0;
 }
 
+//! check the existence of a DB
+/*!
+    \param db_name the name of the db to check
+    \return true if exists; otherwise false
+ */
 bool DB::db_exist(const std::string& db_name) {
-	boost::filesystem::path db_file_path = boost::filesystem::path(db_name);
-	if (boost::filesystem::exists(db_file_path)) {
-		LOG(INFO) << "The DB file "
-				  << db_name
-				  << " exists";
-		return true;
-	} else {
-		LOG(INFO) << "The db file "
-				  << db_name
-				  << " does not exists";
-		return false;
-	}
+    boost::filesystem::path db_file_path = boost::filesystem::path(db_name);
+    if (boost::filesystem::exists(db_file_path)) {
+        LOG(INFO) << "The DB file "
+                  << db_name
+                  << " exists";
+        return true;
+    } else {
+        LOG(INFO) << "The db file "
+                  << db_name
+                  << " does not exists";
+        return false;
+    }
 }
-
 
 }
