@@ -1,0 +1,4 @@
+page_size: 1024 #KB
+cache_ram_size : 1024 #number of pages
+cahe_gpu_size  : 1024 #number of pages
+buffer_ram_size: 1024 #number of pages
