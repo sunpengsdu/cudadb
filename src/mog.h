@@ -9,6 +9,8 @@
 #ifndef SUNPENG_CAP_MOG_H
 #define SUNPENG_CAP_MOG_H
 
+#define MOG_SUCCESS 0
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -22,17 +24,7 @@
 
 #include "./CpuCache.h"
 #include "./GpuCache.h"
-
-extern void mog_malloc_gpu(int32_t device_id,
-                        int32_t page_size,
-                        char** pages,
-                        int32_t page_id);
-
-extern void mog_memcpy_cpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t page_size);
-
-extern void mog_memcpy_gpu_to_cpu(int32_t device_id, char* dst, const char* src, int32_t page_size);
-
-extern void mog_vectorAdd(int32_t device_id, const char *A, const char *B, char *C, int numElements);
+#include "./WriteBuffer.h"
 
 namespace cap {
 
@@ -49,16 +41,17 @@ public:
 
     int32_t setup(const std::string& config_file);
     int32_t open(const std::string& db_name);
-    bool db_exist(const std::string& db_name);
+    bool    exist(const std::string& db_name);
+    int32_t write(const std::string& key, const char *value, int32_t length);
+    int32_t read(const std::string& key, char *value);
 
 private:
     int32_t initial_para(const std::string& config_file);
     int32_t get_device_num(int32_t *num);
-    int32_t mog_malloc_cpu(int32_t page_size, char** pages, int32_t page_id);
     int32_t allocate_memory();
 
-    int32_t create_db();
-    int32_t load_db();
+    int32_t create();
+    int32_t load();
 
     YAML::Node  yaml_config;
     std::string config_file;
@@ -71,11 +64,12 @@ private:
     //buffer is used for write operation
     int32_t cpu_page_num;
     int32_t gpu_page_num;
-    int32_t block_page_num;
+    int32_t page_per_block;;
     int32_t buffer_page_num;
 
     std::map<int32_t, GpuCache> gpu_caches;
     CpuCache cpu_caches;
+    WriteBuffer write_buffers;
 };
 
 }

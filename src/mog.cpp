@@ -31,20 +31,14 @@ int32_t mog::setup(const std::string& config_file) {
     get_device_num(&device_num);
     CHECK_NE(device_num, 0);
     initial_para(config_file);
-    return 0;
-}
-
-int32_t mog::mog_malloc_cpu(int32_t page_size, char** pages, int32_t page_id) {
-    char *page = (char *)malloc(page_size);
-    pages[page_id] = page;
-    return 0;
+    return MOG_SUCCESS;
 }
 
 int32_t mog::get_device_num(int32_t *num) {
     CHECK_EQ(cuDeviceGetCount(num), CUDA_SUCCESS);
     CHECK_NE(device_num, 0);
     LOG(INFO) << "Find " << *num << " GPUs";
-    return 0;
+    return MOG_SUCCESS;
 }
 
 //! Initial parameter in the DB
@@ -57,7 +51,7 @@ int32_t mog::initial_para(const std::string& config_file) {
 	page_size       = 1*1024*1024;    //1 MB
 	cpu_page_num    = 1024;           //1024 pages
 	gpu_page_num    = 1024;           //1024 pages
-	block_page_num  = 16;             //16 pages
+	page_per_block  = 16;             //16 pages
 	buffer_page_num = 1024;
 	this->config_file = config_file;
 	this->db_name     = "NULL";
@@ -99,11 +93,11 @@ int32_t mog::initial_para(const std::string& config_file) {
 	          << " pages";
 
 	//load block_size
-	    if (yaml_config["block_page_num"]) {
-	        block_page_num = yaml_config["block_page_num"].as<int>();
+	    if (yaml_config["page_per_block"]) {
+	        page_per_block = yaml_config["page_per_block"].as<int>();
 	    }
 	    LOG(INFO) << "Block Size: "
-	              << block_page_num
+	              << page_per_block
 	              << " pages";
 
 	//load buffer_ram_size
@@ -140,71 +134,59 @@ int32_t mog::initial_para(const std::string& config_file) {
         devices.push_back(0);
         LOG(INFO) << "Used Devices: " << 0;
     }
-	return 0;
+	return MOG_SUCCESS;
 }
 
 int32_t mog::allocate_memory() {
     for (auto device_id : devices) {
-        gpu_caches[device_id] = GpuCache();
-        gpu_caches[device_id].page_num   = gpu_page_num;
-        gpu_caches[device_id].page_size  = page_size;
-        gpu_caches[device_id].pages      = new char*[gpu_page_num];
-        for (int32_t page_id = 0; page_id < gpu_page_num; ++page_id) {
-            mog_malloc_gpu(device_id,
-                        page_size,
-                        gpu_caches[device_id].pages,
-                        page_id);
-        }
+        gpu_caches[device_id] = GpuCache(device_id);
+        CHECK_EQ(gpu_caches[device_id].initial(page_size, gpu_page_num), GPUCACHE_SUCCESS);
+        CHECK_EQ(gpu_caches[device_id].allocate_memory(), GPUCACHE_SUCCESS);
+        LOG(INFO) << "---------> Create GPU Cache Done On Device " << device_id;
     }
-    cpu_caches.page_num   = cpu_page_num;
-    cpu_caches.page_size  = page_size;
-    cpu_caches.pages      = new char*[cpu_page_num];
 
-    for (int32_t page_id = 0; page_id < cpu_page_num; ++page_id) {
-        mog_malloc_cpu(page_size,
-                    cpu_caches.pages,
-                    page_id);
-        memset(cpu_caches.pages[page_id], '!', page_size);
-    }
-    return 0;
+    CHECK_EQ(cpu_caches.initial(page_size, cpu_page_num), CPUCACHE_SUCCESS);
+    CHECK_EQ(cpu_caches.allocate_memory(), CPUCACHE_SUCCESS);
+    LOG(INFO) << "---------> Create CPU Cache Done";
+
+    CHECK_EQ(write_buffers.initial(page_size, page_per_block, buffer_page_num), WRITEBUFFER_SUCCESS);
+    CHECK_EQ(write_buffers.allocate_memory(), WRITEBUFFER_SUCCESS);
+    LOG(INFO) << "---------> Create Write Buffer Done "
+              << write_buffers.buffer.size()
+              << " blocks";
+    return MOG_SUCCESS;
 }
 
 //! Create a new DB
-int32_t mog::create_db() {
+int32_t mog::create() {
     allocate_memory();
-    mog_memcpy_cpu_to_gpu(0, gpu_caches[0].pages[1], cpu_caches.pages[0], page_size);
-
-    while(1) {
-    mog_vectorAdd(0, gpu_caches[0].pages[1], gpu_caches[0].pages[0], gpu_caches[0].pages[1], 1024*1024); }
-    mog_memcpy_gpu_to_cpu(0, cpu_caches.pages[0], gpu_caches[0].pages[1], page_size);
-    std::cout << "###"<< cpu_caches.pages[0][0]<<"#######\n";
-
     LOG(INFO) << "Create a new CudaDB: "
               << this->db_name;
-    return 0;
+    return MOG_SUCCESS;
 }
 
 //! Load an existed DB
-int32_t mog::load_db() {
+int32_t mog::load() {
     allocate_memory();
     LOG(INFO) << "Load an existed CudaDB: "
               << this->db_name;
-    return 0;
+    return MOG_SUCCESS;
 }
 
 //! Open a DB, if it exists, load it; otherwise, create a DB with the name
 /*!
     \param db_name the name of the db to open
     \return 0 if success
- */
+*/
+
 int32_t mog::open(const std::string& db_name) {
     this->db_name = db_name;
-    if (db_exist(db_name)) {
-        load_db();
+    if (exist(db_name)) {
+        load();
     } else {
-        create_db();
+        create();
     }
-    return 0;
+    return MOG_SUCCESS;
 }
 
 //! check the existence of a DB
@@ -212,7 +194,7 @@ int32_t mog::open(const std::string& db_name) {
     \param db_name the name of the db to check
     \return true if exists; otherwise false
  */
-bool mog::db_exist(const std::string& db_name) {
+bool mog::exist(const std::string& db_name) {
     boost::filesystem::path db_file_path = boost::filesystem::path(db_name);
     if (boost::filesystem::exists(db_file_path)) {
         LOG(INFO) << "The DB file "
@@ -225,6 +207,14 @@ bool mog::db_exist(const std::string& db_name) {
                   << " does not exists";
         return false;
     }
+}
+
+int32_t mog::write(const std::string& key, const char *value, int32_t length) {
+    write_buffers.write(key, value, length);
+    return MOG_SUCCESS;
+}
+int32_t mog::read(const std::string& key, char *value) {
+    return MOG_SUCCESS;
 }
 
 }

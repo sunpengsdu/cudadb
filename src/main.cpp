@@ -19,7 +19,8 @@ int main(int argc, char**argv) {
 //	google::SetLogDestination(google::FATAL, logfile.c_str());
 
     cap::mog DB;
-    DB.open("www");
+    CHECK_EQ(DB.open("www"), MOG_SUCCESS);
+    CHECK_EQ(DB.write("wqe", "2", 1), MOG_SUCCESS);
     while(1);
     return 0;
 }

@@ -35,18 +35,7 @@ void mog_memcpy_gpu_to_cpu(int32_t device_id, char* dst, const char* src, int32_
 	//cudaDeviceSynchronize();
 }
 
-__global__ void
-vectorAdd(const char *A, const char *B, char *C, int numElements)
-{
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-    if (i < numElements)
-    {
-        C[i] = A[i] + 1;
-    }
-}
-
-
+/*
 void mog_vectorAdd(int32_t device_id, const char *A, const char *B, char *C, int numElements) {
 	cudaError_t err = cudaSuccess;
 	
@@ -62,4 +51,4 @@ void mog_vectorAdd(int32_t device_id, const char *A, const char *B, char *C, int
         exit(EXIT_FAILURE);
     }
 }
-
+*/
