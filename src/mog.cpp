@@ -151,16 +151,14 @@ int32_t mog::allocate_memory() {
 
     CHECK_EQ(write_buffers.initial(page_size, page_per_block, buffer_page_num), WRITEBUFFER_SUCCESS);
     CHECK_EQ(write_buffers.allocate_memory(), WRITEBUFFER_SUCCESS);
-    LOG(INFO) << "---------> Create Write Buffer Done "
-              << write_buffers.buffer.size()
-              << " blocks";
+    LOG(INFO) << "---------> Create Write Buffer Done ";
     return MOG_SUCCESS;
 }
 
 //! Create a new DB
 int32_t mog::create() {
     allocate_memory();
-    LOG(INFO) << "Create a new CudaDB: "
+    LOG(INFO) << "Create a new Mog: "
               << this->db_name;
     return MOG_SUCCESS;
 }
@@ -168,7 +166,7 @@ int32_t mog::create() {
 //! Load an existed DB
 int32_t mog::load() {
     allocate_memory();
-    LOG(INFO) << "Load an existed CudaDB: "
+    LOG(INFO) << "Load an existed Mog: "
               << this->db_name;
     return MOG_SUCCESS;
 }

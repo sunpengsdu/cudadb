@@ -20,7 +20,9 @@ int main(int argc, char**argv) {
 
     cap::mog DB;
     CHECK_EQ(DB.open("www"), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wqe", "2", 1), MOG_SUCCESS);
+    for (int i = 0; i < 4500; ++i) {
+        CHECK_EQ(DB.write("wgrfgre", "2", 1), MOG_SUCCESS);
+    }
     while(1);
     return 0;
 }
