@@ -1,0 +1,8 @@
+page_size: 1024       #KB
+cpu_page_num: 1024    #number of pages
+gpu_page_num: 1024     #number of pages
+page_per_block: 2           
+buffer_page_num: 1024   
+devices: 0,1          #used devices
+ssd_path: .
+dfs_path: .
