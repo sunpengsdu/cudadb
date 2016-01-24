@@ -42,10 +42,14 @@ int32_t WriteBuffer::initial(const int32_t page_size,
     this->max_page_num   = int32_t(1.2 * page_num);
     this->initial_flag   = 0;
     this->flush_thread_num = 6;
-    std::string temp_num;
-    leveldb::Status s = CentraIndex::singleton().db->Get(leveldb::ReadOptions(), "FILE_NUM", &temp_num);
-    if (s.ok()) {
-        this->latest_block_id = std::stoi(temp_num);
+    int32_t temp_num = 0;
+    int32_t tempt_read_len;
+    tempt_read_len = CentraIndex::singleton().get("FILE_NUM",
+                                            strlen("FILE_NUM"),
+                                            (char*)&temp_num,
+                                            sizeof(temp_num));
+    if (tempt_read_len != 0) {
+        this->latest_block_id = temp_num;
     } else {
         this->latest_block_id = 0;
     }
@@ -124,9 +128,10 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         }
         auto flush_func = std::bind(WriteBuffer::flush, latest_block_id);
         flush_thread_pool->schedule(flush_func);
-        CentraIndex::singleton().db->Put(leveldb::WriteOptions(),
-                "FILE_NUM",
-                std::to_string(latest_block_id).c_str());
+        CentraIndex::singleton().put("FILE_NUM",
+                strlen("FILE_NUM"),
+                (char*)&latest_block_id,
+                sizeof(latest_block_id));
     }
     return WRITEBUFFER_SUCCESS;
 }
@@ -144,29 +149,32 @@ void WriteBuffer::flush(int32_t block_id) {
     IndexInfo new_record;
     new_record.block_id = block_id;
 
-    std::string a;
     for (auto i : WriteBuffer::singleton().blocks[block_id]) {
-        a.clear();
         flushed_size += WriteBuffer::slab_size[i.value_length_type];
         ++key_num;
         //******
         fout.write(i.value, i.value_length);
         new_record.offset = offset;
+        new_record.length = i.value_length;
 
-        a.append(std::to_string(block_id));
-        a.append("#");
-        a.append(std::to_string(offset));
-        CentraIndex::singleton().db->Put(leveldb::WriteOptions(), i.key, a);
+        CentraIndex::singleton().put(i.key.c_str(),
+                i.key.length(),
+                (char*)&new_record,
+                sizeof(new_record));
         //*****
         offset += i.value_length;
         WriteBuffer::singleton().page[i.value_length_type]->free(i.value);
-
-        std::string t;
-        CentraIndex::singleton().db->Get(leveldb::ReadOptions(), i.key, &t);
-        std::cout << t << "\n";
+//
+//        IndexInfo t;
+//        CentraIndex::singleton().get(i.key.c_str(),
+//                i.key.length(),
+//                (char*)&t,
+//                sizeof(t));
+//        std::cout << i.key << "->" << t.block_id << "#" << t.length << "@" << t.offset << "\n";
     }
     fout.close();
 
+    SSDCache::singleton().new_block(block_id);
     WriteBuffer::singleton().blocks.erase(block_id);
     WriteBuffer::singleton().total_size.fetch_sub(flushed_size);
 }

@@ -52,6 +52,7 @@ int32_t mog::initial_para(const std::string& config_file) {
 	cpu_page_num    = 1024;           //1024 pages
 	gpu_page_num    = 1024;           //1024 pages
 	page_per_block  = 16;             //16 pages
+	SSD_page_num    = 1024;
 	buffer_page_num = 1024;
 	this->config_file = config_file;
 	this->db_name     = "NULL";
@@ -93,6 +94,13 @@ int32_t mog::initial_para(const std::string& config_file) {
 	LOG(INFO) << "Cache Gpu Size: "
 			  << gpu_page_num
 	          << " pages";
+
+    if (yaml_config["SSD_page_num"]) {
+        SSD_page_num = yaml_config["SSD_page_num"].as<int>();
+    }
+    LOG(INFO) << "SSD Page Num: "
+              << SSD_page_num
+              << " pages";
 
 	//load block_size
 	    if (yaml_config["page_per_block"]) {
@@ -167,6 +175,12 @@ int32_t mog::allocate_memory() {
     WriteBuffer::singleton().dfs_path = this->dfs_path;
     CHECK_EQ(WriteBuffer::singleton().allocate_memory(), WRITEBUFFER_SUCCESS);
     LOG(INFO) << "---------> Create Write Buffer Done ";
+
+    SSDCache::singleton().dfs_path = this->dfs_path;
+    SSDCache::singleton().ssd_path = this->ssd_path;
+    SSDCache::singleton().max_block_num = this->SSD_page_num/this->page_per_block;
+    LOG(INFO) << "---------> Create SSD Cache Done ";
+
     return MOG_SUCCESS;
 }
 
@@ -175,7 +189,11 @@ int32_t mog::create() {
     CentraIndex::singleton().setup(ssd_path + "/" +
             db_name+
             ".mog");
-    CentraIndex::singleton().db->Put(leveldb::WriteOptions(), "FILE_NUM", "0");
+    int32_t initial_block_id = 0;
+    CentraIndex::singleton().put("FILE_NUM",
+            strlen("FILE_NUM"),
+            (char*)&initial_block_id,
+            sizeof(initial_block_id));
     allocate_memory();
     LOG(INFO) << "Create a new Mog: "
               << this->db_name;

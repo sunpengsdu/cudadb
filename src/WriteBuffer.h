@@ -27,6 +27,7 @@
 
 #include "./include/threadpool/boost/threadpool.hpp"
 #include "./CentraIndex.h"
+#include "./SSDCache.h"
 
 namespace cap {
 

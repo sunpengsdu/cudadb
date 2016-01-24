@@ -27,6 +27,7 @@
 #include "./WriteBuffer.h"
 
 #include "./CentraIndex.h"
+#include "./SSDCache.h"
 
 namespace cap {
 
@@ -66,6 +67,7 @@ private:
     //buffer is used for write operation
     int32_t cpu_page_num;
     int32_t gpu_page_num;
+    int32_t SSD_page_num;
     int32_t page_per_block;;
     int32_t buffer_page_num;
     std::string ssd_path;
