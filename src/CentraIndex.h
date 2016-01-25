@@ -29,6 +29,7 @@ struct IndexInfo {
     int32_t block_id;
     int32_t offset;
     int32_t length;
+    int32_t length_type;
 };
 
 class CentraIndex {

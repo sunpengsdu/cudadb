@@ -74,7 +74,7 @@ private:
     std::string dfs_path;
 
     std::map<int32_t, GpuCache> gpu_caches;
-    CpuCache cpu_caches;
+   // CpuCache cpu_caches;
    // WriteBuffer write_buffers;
 };
 

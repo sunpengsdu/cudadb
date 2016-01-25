@@ -35,9 +35,30 @@ int main(int argc, char**argv) {
 
     //CHECK_EQ(DB.write("wgrfgre2", bb, 1), MOG_SUCCESS);
 
+    sleep(2);
+
     char aa[1024*1024*2];
     int32_t l = 0;
     l = DB.read("wgrfgre2", aa);
+    l = DB.read("wgrfgre3", aa);
+    l = DB.read("wgrfgre4", aa);
+    l = DB.read("wgrfgre5", aa);
+    l = DB.read("wgrfgre6", aa);
+    l = DB.read("wgrfgre7", aa);
+    l = DB.read("wgrfgre4", aa);
+    l = DB.read("wgrfgre5", aa);
+
+    std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
+
+    sleep(2);
+    l = DB.read("wgrfgre2", aa);
+    l = DB.read("wgrfgre3", aa);
+    l = DB.read("wgrfgre4", aa);
+    l = DB.read("wgrfgre5", aa);
+    l = DB.read("wgrfgre6", aa);
+    l = DB.read("wgrfgre7", aa);
+    l = DB.read("wgrfgre4", aa);
+    l = DB.read("wgrfgre5", aa);
     std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
 
     while(1);

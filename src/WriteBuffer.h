@@ -22,9 +22,9 @@
 #include <cmath>
 #include <fstream>
 #include <atomic>
-#include <glog/logging.h>
 #include <boost/pool/pool.hpp>
 
+#include "./include/glog/logging.h"
 #include "./include/threadpool/boost/threadpool.hpp"
 #include "./CentraIndex.h"
 #include "./SSDCache.h"
@@ -36,6 +36,8 @@ struct kv_info {
     char* value;
     int32_t value_length;
     int32_t value_length_type;
+    int32_t w_lock;
+    int32_t r_lock;
 };
 
 class WriteBuffer {

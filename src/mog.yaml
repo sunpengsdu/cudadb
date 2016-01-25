@@ -6,4 +6,4 @@ page_per_block: 2
 buffer_page_num: 1024   
 devices: 0,1          #used devices
 ssd_path: ./ssd
-dfs_path: ./hdd
+dfs_path: ./dfs

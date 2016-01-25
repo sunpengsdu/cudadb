@@ -55,6 +55,9 @@ int32_t WriteBuffer::initial(const int32_t page_size,
     }
 
     this->flush_thread_pool = new boost::threadpool::pool(flush_thread_num);
+    this->kv_store.reserve(this->max_page_num*1024*1.2);
+    this->blocks.reserve(this->max_page_num*1.2);
+
 //    this->latest_block_id= 0;
     return WRITEBUFFER_SUCCESS;
 }
@@ -71,7 +74,7 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
     if (length > WriteBuffer::slab_size[10]) {
         return 1;
     }
-    while (this->total_size > this->max_page_num * 1024*1024) {
+    while (this->total_size > this->max_page_num * this->page_size) {
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
     size_t hashed_key  = std::hash<std::string>()(key);
@@ -89,7 +92,9 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         this->total_size_without_block.fetch_sub(WriteBuffer::slab_size[length_type]);
     }
 
-    this->kv_store[hashed_key].key = key;
+    this->kv_store[hashed_key].w_lock = 1;
+    this->kv_store[hashed_key].r_lock = 0;
+    this->kv_store[hashed_key].key  = key;
     this->kv_store[hashed_key].value_length = length;
     int32_t target_slab_type = std::ceil(std::log2(length/1024.0));
     //if the computed target_slab_type is less than 0
@@ -100,6 +105,7 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
     this->kv_store[hashed_key].value_length_type = target_slab_type;
     this->kv_store[hashed_key].value = (char*)page[target_slab_type]->malloc();
     memcpy(this->kv_store[hashed_key].value, value, length);
+    this->kv_store[hashed_key].w_lock = 0;
 
     if (existence == false) {
         this->kv_list.push(hashed_key);
@@ -112,8 +118,12 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         int32_t new_block_size = 0;
         size_t temp_hashed_key = 0;
         int32_t temp_slab_type;
+        bool w_lock = false;
         while (true ) {
             temp_hashed_key = this->kv_list.front();
+            this->kv_store[hashed_key].w_lock = 1;
+            while(! __sync_bool_compare_and_swap(&this->kv_store[hashed_key].r_lock, 0, 0));
+
             temp_slab_type  = this->kv_store[temp_hashed_key].value_length_type;
             if (new_block_size + WriteBuffer::slab_size[temp_slab_type] >
                 this->page_per_block*1024*1024) {
@@ -156,6 +166,7 @@ void WriteBuffer::flush(int32_t block_id) {
         fout.write(i.value, i.value_length);
         new_record.offset = offset;
         new_record.length = i.value_length;
+        new_record.length_type = i.value_length_type;
 
         CentraIndex::singleton().put(i.key.c_str(),
                 i.key.length(),
@@ -170,13 +181,16 @@ void WriteBuffer::flush(int32_t block_id) {
 //                i.key.length(),
 //                (char*)&t,
 //                sizeof(t));
-//        std::cout << i.key << "->" << t.block_id << "#" << t.length << "@" << t.offset << "\n";
+//        std::cout << i.key << "->" << t.block_id << "#" << t.length << "$" << i.value_length_type << "@" << t.offset << "\n";
     }
     fout.close();
 
     SSDCache::singleton().new_block(block_id);
     WriteBuffer::singleton().blocks.erase(block_id);
     WriteBuffer::singleton().total_size.fetch_sub(flushed_size);
+    LOG(INFO) << "FLUSH BLOCK "
+            << block_id
+            << " FROM BUFFER TO SSD";
 }
 
 
@@ -184,7 +198,12 @@ int32_t WriteBuffer::read(const std::string& key, char *value) {
     size_t hashed_key  = std::hash<std::string>()(key);
     auto target = this->kv_store.find(hashed_key);
     if (target != this->kv_store.end()) {
+        if(target->second.w_lock == 1) {
+            return 0;
+        }
+        __sync_fetch_and_add(&target->second.r_lock, 1);
         memcpy(value, target->second.value, target->second.value_length);
+        __sync_fetch_and_add(&target->second.r_lock, -1);
         return target->second.value_length;
     } else {
         return 0;

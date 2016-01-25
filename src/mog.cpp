@@ -167,8 +167,8 @@ int32_t mog::allocate_memory() {
         LOG(INFO) << "---------> Create GPU Cache Done On Device " << device_id;
     }
 
-    CHECK_EQ(cpu_caches.initial(page_size, cpu_page_num), CPUCACHE_SUCCESS);
-    CHECK_EQ(cpu_caches.allocate_memory(), CPUCACHE_SUCCESS);
+    CHECK_EQ(CpuCache::singleton().initial(page_size, cpu_page_num), CPUCACHE_SUCCESS);
+    CHECK_EQ(CpuCache::singleton().allocate_memory(), CPUCACHE_SUCCESS);
     LOG(INFO) << "---------> Create CPU Cache Done";
     CHECK_EQ(WriteBuffer::singleton().initial(page_size, page_per_block, buffer_page_num), WRITEBUFFER_SUCCESS);
     WriteBuffer::singleton().ssd_path = this->ssd_path;
@@ -249,7 +249,13 @@ int32_t mog::write(const std::string& key, const char *value, int32_t length) {
     return MOG_SUCCESS;
 }
 int32_t mog::read(const std::string& key, char *value) {
-    int32_t length = WriteBuffer::singleton().read(key,value);
+    int32_t length = 0;
+    /**********************
+    //length = WriteBuffer::singleton().read(key,value);
+
+     ************************/
+    length = CpuCache::singleton().read(key, value);
+
     return length;
 }
 
