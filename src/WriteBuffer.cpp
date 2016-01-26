@@ -74,9 +74,17 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
     if (length > WriteBuffer::slab_size[10]) {
         return 1;
     }
+    LOG(INFO) << "WriteBuffer Size: " << this->total_size
+            <<" Max Size: " << this->max_page_num * this->page_size;
+
     while (this->total_size > this->max_page_num * this->page_size) {
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
+
+    while (SSDCache::singleton().block_num >= SSDCache::singleton().max_block_num) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+    }
+
     size_t hashed_key  = std::hash<std::string>()(key);
 
     auto existed_key = this->kv_store.find(hashed_key);
@@ -84,6 +92,7 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
 
     if (existed_key != this->kv_store.end()) {
         return 1;
+        //***********************
         existence = true;
         int32_t length_type = this->kv_store[hashed_key].value_length_type;
         this->page[length_type]->free(this->kv_store[hashed_key].value);
@@ -191,6 +200,9 @@ void WriteBuffer::flush(int32_t block_id) {
     LOG(INFO) << "FLUSH BLOCK "
             << block_id
             << " FROM BUFFER TO SSD";
+
+    LOG(INFO) << "WriteBuffer Size: " << WriteBuffer::singleton().total_size
+                <<" Max Size: " << WriteBuffer::singleton().max_page_num * WriteBuffer::singleton().page_size;
 }
 
 

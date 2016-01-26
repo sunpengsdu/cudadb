@@ -179,6 +179,7 @@ int32_t mog::allocate_memory() {
     SSDCache::singleton().dfs_path = this->dfs_path;
     SSDCache::singleton().ssd_path = this->ssd_path;
     SSDCache::singleton().max_block_num = this->SSD_page_num/this->page_per_block;
+    SSDCache::singleton().initial();
     LOG(INFO) << "---------> Create SSD Cache Done ";
 
     return MOG_SUCCESS;
@@ -250,13 +251,16 @@ int32_t mog::write(const std::string& key, const char *value, int32_t length) {
 }
 int32_t mog::read(const std::string& key, char *value) {
     int32_t length = 0;
-    /**********************
-    //length = WriteBuffer::singleton().read(key,value);
 
-     ************************/
-    length = CpuCache::singleton().read(key, value);
+    length = WriteBuffer::singleton().read(key,value);
+    if (length > 0) {
+        return length;
+    } else {
+        length = CpuCache::singleton().read(key, value);
+        return length;
+    }
 
-    return length;
+
 }
 
 }

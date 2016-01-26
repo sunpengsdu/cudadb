@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -44,7 +45,7 @@ public:
     CpuCache();
     virtual ~CpuCache();
 
-    cpu_cache_rwmutex cache_lock;
+    cpu_cache_rwmutex rw_cache_lock;
     int32_t page_size;
     int32_t slab_num;
     int32_t page_num;

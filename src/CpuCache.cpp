@@ -58,16 +58,16 @@ int32_t CpuCache::insert(const std::string &key,
         const IndexInfo &central_index_info,
         char *value) {
 
-    cpu_cache_writeLock cache_lock;
+    cpu_cache_writeLock lock_cpu_cache_insert(rw_cache_lock);
 
-    LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
+    LOG(INFO) << "RAM CACHE TRY INSERT " << key;
 
-    if (this->free_slab_num < (central_index_info.length_type+1)) {
+    if (this->free_slab_num < pow(2, central_index_info.length_type)) {
         while (true) {
             std::string deleted_item = this->cached_item_queue.front();
             this->cached_item_queue.pop();
 
-            this->free_slab_num.fetch_add(this->cached_item[deleted_item].length_type+1);
+            this->free_slab_num.fetch_add(pow(2, this->cached_item[deleted_item].length_type));
 
             for (auto freed_slab : this->cached_item[deleted_item].slabs) {
                 memset(this->slabs[freed_slab], 0, 1024);
@@ -78,7 +78,7 @@ int32_t CpuCache::insert(const std::string &key,
             LOG(INFO) << "RAM CACHE DELETE: " << deleted_item;
             LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
 
-            if (this->free_slab_num > (central_index_info.length_type+1)) {
+            if (this->free_slab_num >= pow(2, central_index_info.length_type)) {
                 break;
             }
         }
@@ -88,15 +88,18 @@ int32_t CpuCache::insert(const std::string &key,
     this->cached_item[key].length_type = central_index_info.length_type;
 
     int32_t new_slab_id = 0;
-    for (int32_t i = 0; i < (central_index_info.length_type); ++i) {
+    for (int32_t i = 0; i < (pow(2, central_index_info.length_type)); ++i) {
         new_slab_id = this->free_slabs.front();
         this->cached_item[key].slabs.push_back(new_slab_id);
         memcpy(this->slabs[new_slab_id], value + i*1024, 1024);
         this->free_slabs.pop();
         this->free_slab_num.fetch_sub(1);
     }
+
     this->cached_item_queue.push(key);
-    LOG(INFO) << "RAM CACHE INSERT: " << key;
+
+    LOG(INFO) << "RAM CACHE INSERT " << key;
+    LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
 
     return 0;
 }
@@ -122,6 +125,7 @@ int32_t CpuCache::read(const std::string& key, char *value) {
             LOG(INFO) << "NO SUCH KEY " << key;
             return 0;
         } else {
+
             SSDCache::singleton().read(key, key_centra_index, value);
 
             this->insert(key, key_centra_index, value);
@@ -134,7 +138,7 @@ int32_t CpuCache::read(const std::string& key, char *value) {
 
         LOG(INFO) << "RAM CACHE HIT " << key;
 
-        cpu_cache_readLock(this->cache_lock);
+        cpu_cache_readLock lock_ram_read(this->rw_cache_lock);
 
         for (auto i : target_item->second.slabs) {
             memcpy(value, this->slabs[i], 1024);
