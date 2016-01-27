@@ -85,6 +85,8 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
 
+    wbuffer_writeLock write_lock(this->wbuffer_lock);
+
     size_t hashed_key  = std::hash<std::string>()(key);
 
     auto existed_key = this->kv_store.find(hashed_key);
@@ -101,8 +103,8 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         this->total_size_without_block.fetch_sub(WriteBuffer::slab_size[length_type]);
     }
 
-    this->kv_store[hashed_key].w_lock = 1;
-    this->kv_store[hashed_key].r_lock = 0;
+//    this->kv_store[hashed_key].w_lock = 1;
+//    this->kv_store[hashed_key].r_lock = 0;
     this->kv_store[hashed_key].key  = key;
     this->kv_store[hashed_key].value_length = length;
     int32_t target_slab_type = std::ceil(std::log2(length/1024.0));
@@ -114,7 +116,7 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
     this->kv_store[hashed_key].value_length_type = target_slab_type;
     this->kv_store[hashed_key].value = (char*)page[target_slab_type]->malloc();
     memcpy(this->kv_store[hashed_key].value, value, length);
-    this->kv_store[hashed_key].w_lock = 0;
+//    this->kv_store[hashed_key].w_lock = 0;
 
     if (existence == false) {
         this->kv_list.push(hashed_key);
@@ -130,8 +132,8 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         bool w_lock = false;
         while (true ) {
             temp_hashed_key = this->kv_list.front();
-            this->kv_store[hashed_key].w_lock = 1;
-            while(! __sync_bool_compare_and_swap(&this->kv_store[hashed_key].r_lock, 0, 0));
+//            this->kv_store[hashed_key].w_lock = 1;
+//            while(! __sync_bool_compare_and_swap(&this->kv_store[hashed_key].r_lock, 0, 0));
 
             temp_slab_type  = this->kv_store[temp_hashed_key].value_length_type;
             if (new_block_size + WriteBuffer::slab_size[temp_slab_type] >
@@ -141,7 +143,9 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
                 this->kv_list.pop();
                 this->blocks[latest_block_id].push_back(this->kv_store[temp_hashed_key]);
                 this->total_size_without_block.fetch_sub(WriteBuffer::slab_size[temp_slab_type]);
-                this->kv_store.erase(temp_hashed_key);
+                //**********************
+                //                this->kv_store.erase(temp_hashed_key);
+                //**********************
                 new_block_size += WriteBuffer::slab_size[temp_slab_type];
             }
         }
@@ -168,6 +172,8 @@ void WriteBuffer::flush(int32_t block_id) {
     IndexInfo new_record;
     new_record.block_id = block_id;
 
+    wbuffer_writeLock write_lock(WriteBuffer::singleton().wbuffer_lock);
+
     for (auto i : WriteBuffer::singleton().blocks[block_id]) {
         flushed_size += WriteBuffer::slab_size[i.value_length_type];
         ++key_num;
@@ -184,6 +190,9 @@ void WriteBuffer::flush(int32_t block_id) {
         //*****
         offset += i.value_length;
         WriteBuffer::singleton().page[i.value_length_type]->free(i.value);
+
+        WriteBuffer::singleton().kv_store.erase(std::hash<std::string>()(i.key));
+        LOG(INFO) << "<<< Erase Key: " << (i.key) << " From Write Buffer";
 //
 //        IndexInfo t;
 //        CentraIndex::singleton().get(i.key.c_str(),
@@ -207,15 +216,20 @@ void WriteBuffer::flush(int32_t block_id) {
 
 
 int32_t WriteBuffer::read(const std::string& key, char *value) {
+
+    wbuffer_readLock read_lock(this->wbuffer_lock);
+
     size_t hashed_key  = std::hash<std::string>()(key);
     auto target = this->kv_store.find(hashed_key);
     if (target != this->kv_store.end()) {
-        if(target->second.w_lock == 1) {
-            return 0;
-        }
-        __sync_fetch_and_add(&target->second.r_lock, 1);
+//        if(target->second.w_lock == 1) {
+//            return 0;
+//        }
+//        __sync_fetch_and_add(&target->second.r_lock, 1);
         memcpy(value, target->second.value, target->second.value_length);
-        __sync_fetch_and_add(&target->second.r_lock, -1);
+//        __sync_fetch_and_add(&target->second.r_lock, -1);
+
+        LOG(INFO) << "WRITE BUFFER CACHE HIT: " << key;
         return target->second.value_length;
     } else {
         return 0;

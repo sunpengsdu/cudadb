@@ -58,7 +58,7 @@ void SSDCache::flush(int32_t block_id) {
             if (SSDCache::singleton().cached_block_id.size() == 0) {
                 break;
             }
-            if (SSDCache::singleton().block_num < SSDCache::singleton().max_block_num) {
+            if (SSDCache::singleton().block_num < 0.7 * SSDCache::singleton().max_block_num) {
                 break;
             }
             int32_t deleted_i = SSDCache::singleton().cached_block_id.front();
@@ -105,7 +105,7 @@ void SSDCache::fetch(int32_t block_id) {
            if (SSDCache::singleton().cached_block_id.size() == 0) {
                break;
            }
-           if (SSDCache::singleton().block_num < SSDCache::singleton().max_block_num) {
+           if (SSDCache::singleton().block_num < 0.7 * SSDCache::singleton().max_block_num) {
                break;
            }
            int32_t deleted_i = SSDCache::singleton().cached_block_id.front();

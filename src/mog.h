@@ -47,6 +47,7 @@ public:
     bool    exist(const std::string& db_name);
     int32_t write(const std::string& key, const char *value, int32_t length);
     int32_t read(const std::string& key, char *value);
+    int32_t gpu_read(const int32_t device_id, const std::string& key, char *value);
 
 private:
     int32_t initial_para(const std::string& config_file);
@@ -73,7 +74,7 @@ private:
     std::string ssd_path;
     std::string dfs_path;
 
-    std::map<int32_t, GpuCache> gpu_caches;
+    std::map<int32_t, GpuCache*> gpu_caches;
    // CpuCache cpu_caches;
    // WriteBuffer write_buffers;
 };

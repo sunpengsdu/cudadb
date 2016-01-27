@@ -14,24 +14,38 @@ static void HandleError( cudaError_t err,
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 void mog_malloc_gpu(int32_t device_id, 
-				int32_t page_size, 
-				char** pages,
-				int32_t page_id) {
+				int32_t slab_size, 
+				char** slabs,
+				int32_t slab_id) {
 	cudaSetDevice(device_id);
-	char *page;
-	HANDLE_ERROR(cudaMalloc((void **)&page, page_size));
-	pages[page_id] = page;
+	char *new_slab;
+	HANDLE_ERROR(cudaMalloc((void **)&new_slab, slab_size));
+	slabs[slab_id] = new_slab;
 }
 
-void mog_memcpy_cpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t page_size) {
+char* mog_malloc_gpu(int32_t device_id, 
+				int32_t size) {
 	cudaSetDevice(device_id);
-	HANDLE_ERROR(cudaMemcpy(dst, src, page_size, cudaMemcpyHostToDevice));
+	char *data_p;
+	HANDLE_ERROR(cudaMalloc((void **)&data_p, size));
+	return data_p;
+}
+
+void mog_memcpy_cpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t slabe_size) {
+	cudaSetDevice(device_id);
+	HANDLE_ERROR(cudaMemcpy(dst, src, slabe_size, cudaMemcpyHostToDevice));
 	//cudaDeviceSynchronize();
 }
 
-void mog_memcpy_gpu_to_cpu(int32_t device_id, char* dst, const char* src, int32_t page_size) {
+void mog_memcpy_gpu_to_cpu(int32_t device_id, char* dst, const char* src, int32_t slabe_size) {
 	cudaSetDevice(device_id);
-	HANDLE_ERROR(cudaMemcpy(dst, src, page_size, cudaMemcpyDeviceToHost));
+	HANDLE_ERROR(cudaMemcpy(dst, src, slabe_size, cudaMemcpyDeviceToHost));
+	//cudaDeviceSynchronize();
+}
+
+void mog_memcpy_gpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t slabe_size) {
+	cudaSetDevice(device_id);
+	HANDLE_ERROR(cudaMemcpy(dst, src, slabe_size, cudaMemcpyDeviceToDevice));
 	//cudaDeviceSynchronize();
 }
 

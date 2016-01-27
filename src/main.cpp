@@ -65,6 +65,12 @@ int main(int argc, char**argv) {
     l = DB.read("wgrfgre5", aa);
     std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
 
+
+    char* gpu_temp_p = mog_malloc_gpu(1, 1024*1024*2);
+    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
+    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
+    std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
+
     while(1);
     return 0;
 }

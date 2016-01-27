@@ -161,9 +161,9 @@ int32_t mog::initial_para(const std::string& config_file) {
 
 int32_t mog::allocate_memory() {
     for (auto device_id : devices) {
-        gpu_caches[device_id] = GpuCache(device_id);
-        CHECK_EQ(gpu_caches[device_id].initial(page_size, gpu_page_num), GPUCACHE_SUCCESS);
-        CHECK_EQ(gpu_caches[device_id].allocate_memory(), GPUCACHE_SUCCESS);
+        gpu_caches[device_id] = new GpuCache(device_id);
+        CHECK_EQ(gpu_caches[device_id]->initial(page_size, gpu_page_num), GPUCACHE_SUCCESS);
+        CHECK_EQ(gpu_caches[device_id]->allocate_memory(), GPUCACHE_SUCCESS);
         LOG(INFO) << "---------> Create GPU Cache Done On Device " << device_id;
     }
 
@@ -249,6 +249,14 @@ int32_t mog::write(const std::string& key, const char *value, int32_t length) {
     WriteBuffer::singleton().write(key, value, length);
     return MOG_SUCCESS;
 }
+
+
+int32_t mog::gpu_read(const int32_t device_id, const std::string& key, char *value) {
+    int32_t length = 0;
+    length = this->gpu_caches[device_id]->read(key, value);
+    return length;
+}
+
 int32_t mog::read(const std::string& key, char *value) {
     int32_t length = 0;
 
@@ -259,8 +267,6 @@ int32_t mog::read(const std::string& key, char *value) {
         length = CpuCache::singleton().read(key, value);
         return length;
     }
-
-
 }
 
 }

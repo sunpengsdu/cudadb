@@ -31,13 +31,17 @@
 
 namespace cap {
 
+typedef boost::shared_mutex wbuffer_cache_rwmutex;
+typedef boost::shared_lock<ssd_cache_rwmutex> wbuffer_readLock;
+typedef boost::unique_lock<ssd_cache_rwmutex> wbuffer_writeLock;
+
 struct kv_info {
     std::string key;
     char* value;
     int32_t value_length;
     int32_t value_length_type;
-    int32_t w_lock;
-    int32_t r_lock;
+//    int32_t w_lock;
+//    int32_t r_lock;
 };
 
 class WriteBuffer {
@@ -58,6 +62,8 @@ public:
     std::string dfs_path;
 
     boost::pool<> *page[11];
+
+    wbuffer_cache_rwmutex wbuffer_lock;
 
     std::queue<size_t> kv_list;
     std::unordered_map<size_t, kv_info> kv_store;
