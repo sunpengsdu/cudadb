@@ -71,6 +71,8 @@ int main(int argc, char**argv) {
     l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
     std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
 
+    DB.close();
+
     while(1);
     return 0;
 }

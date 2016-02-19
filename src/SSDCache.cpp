@@ -147,6 +147,26 @@ int32_t SSDCache::new_block(int32_t block_id) {
     return 0;
 }
 
+int32_t SSDCache::sync() {
+
+    while(this->thread_pool->pending() > 0 || this->thread_pool->active() > 0) {
+           std::this_thread::sleep_for(std::chrono::microseconds(1));
+    }
+
+    while (SSDCache::singleton().unsynced_block_id.size() > 0) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+    }
+    return 0;
+}
+
+int32_t SSDCache::close() {
+    this->cached_block.clear();
+    this->cached_block_id.clear();
+    this->read_record.clear();
+
+    return 0;
+}
+
 int32_t SSDCache::read(const std::string &key, const IndexInfo &key_info, char* value) {
 
     ssd_cache_readLock read_lock(SSDCache::singleton().ssd_cache_rwlock);

@@ -17,6 +17,7 @@
 #include <atomic>
 #include <map>
 #include <deque>
+#include <thread>
 #include <unordered_map>
 #include <stdio.h>
 
@@ -74,6 +75,10 @@ public:
     int32_t initial();
 
     int32_t new_block(int32_t block_id);
+
+    int32_t sync();
+
+    int32_t close();
 
     int32_t read(const std::string &key, const IndexInfo &key_info, char* value);
 

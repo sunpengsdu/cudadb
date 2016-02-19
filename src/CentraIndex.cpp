@@ -46,6 +46,33 @@ int32_t CentraIndex::setup(const std::string &name) {
     return 0;
 }
 
+int32_t CentraIndex::load(const std::string &name) {
+    this->name = name;
+    this->options = leveldb_options_create();
+    this->cache = leveldb_cache_create_lru(128*1024*1024);
+    this->woptions = leveldb_writeoptions_create();
+    this->roptions = leveldb_readoptions_create();
+
+    //leveldb_options_set_create_if_missing(this->options, 1);
+    leveldb_options_set_write_buffer_size(this->options, 128*1024*1024);
+    leveldb_options_set_block_size(this->options, 64*1024);
+    leveldb_options_set_cache(this->options, this->cache);
+    this->err = NULL;
+
+    this->db = leveldb_open(this->options, name.c_str(), &this->err);
+    if (this->err != NULL) {
+        LOG(FATAL) << "CANNOT Open CentralIndex in " << name;
+    }
+    leveldb_free(this->err);
+    return 0;
+}
+
+
+int32_t CentraIndex::close() {
+    leveldb_close(this->db);
+    return 0;
+}
+
 int32_t CentraIndex::put(const char* key, int32_t key_length,  const char* value, int32_t value_length) {
     char *put_err = NULL;
    // LOG(INFO) << key << "->" << value;

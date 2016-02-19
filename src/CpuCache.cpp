@@ -104,6 +104,15 @@ int32_t CpuCache::insert(const std::string &key,
     return 0;
 }
 
+int32_t CpuCache::close() {
+    this->cached_item.clear();
+
+    for (int32_t slab_id = 0; slab_id < slab_num; ++slab_id) {
+        delete slabs[slab_id];
+    }
+    return 0;
+}
+
 int32_t CpuCache::read(const std::string& key, char *value) {
 
     auto target_item = this->cached_item.find(key);

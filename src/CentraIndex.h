@@ -39,9 +39,11 @@ public:
 
     static CentraIndex& singleton();
     int32_t setup(const std::string &name);
+    int32_t load(const std::string &name);
 
     int32_t put(const char* key, int32_t key_length, const char* value, int32_t value_length);
     int32_t get(const char* key, int32_t key_length, char *value, int32_t buffer_length);
+    int32_t close();
 
 
     leveldb_t* db;

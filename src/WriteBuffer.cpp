@@ -214,6 +214,52 @@ void WriteBuffer::flush(int32_t block_id) {
                 <<" Max Size: " << WriteBuffer::singleton().max_page_num * WriteBuffer::singleton().page_size;
 }
 
+int32_t WriteBuffer::sync() {
+
+    while (! this->kv_list.empty()) { // 1 page 1 MB
+        ++latest_block_id;
+        int32_t new_block_size = 0;
+        size_t temp_hashed_key = 0;
+        int32_t temp_slab_type;
+        bool w_lock = false;
+
+        while (! this->kv_list.empty()) {
+            temp_hashed_key = this->kv_list.front();
+
+            temp_slab_type  = this->kv_store[temp_hashed_key].value_length_type;
+            if (new_block_size + WriteBuffer::slab_size[temp_slab_type] >
+                this->page_per_block*1024*1024) {
+                break;
+            } else {
+                this->kv_list.pop();
+                this->blocks[latest_block_id].push_back(this->kv_store[temp_hashed_key]);
+                this->total_size_without_block.fetch_sub(WriteBuffer::slab_size[temp_slab_type]);
+                //**********************
+                //                this->kv_store.erase(temp_hashed_key);
+                //**********************
+                new_block_size += WriteBuffer::slab_size[temp_slab_type];
+            }
+        }
+        auto flush_func = std::bind(WriteBuffer::flush, latest_block_id);
+        flush_thread_pool->schedule(flush_func);
+        CentraIndex::singleton().put("FILE_NUM",
+                strlen("FILE_NUM"),
+                (char*)&latest_block_id,
+                sizeof(latest_block_id));
+    }
+
+    while(flush_thread_pool->active() > 0 || flush_thread_pool->pending() > 0) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+    }
+
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
+    return 0;
+}
+
+int32_t WriteBuffer::close() {
+    this->kv_store.clear();
+    return 0;
+}
 
 int32_t WriteBuffer::read(const std::string& key, char *value) {
 

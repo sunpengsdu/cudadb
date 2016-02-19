@@ -85,6 +85,8 @@ public:
     int32_t read(const std::string& key, char *value);
     static WriteBuffer& singleton();
     static void flush(int32_t block_id);
+    int32_t sync();
+    int32_t close();
 };
 
 } /* namespace cap */

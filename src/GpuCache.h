@@ -45,6 +45,8 @@ extern void mog_memcpy_gpu_to_cpu(int32_t device_id, char* dst, const char* src,
 
 extern void mog_memcpy_gpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t slabe_size);
 
+extern void mog_free_gpu(int32_t device_id, char* data_p);
+
 namespace cap {
 
 struct GPUCachedItem {
@@ -87,6 +89,8 @@ public:
 
     int32_t initial(const int32_t page_size, const int32_t page_num);
     int32_t allocate_memory();
+
+    int32_t close();
 
     int32_t read(const std::string& key, char *value);
     int32_t insert(const std::string &key,

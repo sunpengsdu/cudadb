@@ -123,6 +123,15 @@ int32_t GpuCache::insert(const std::string &key,
     return 0;
 }
 
+int32_t GpuCache::close() {
+    this->cached_item.clear();
+
+    for (int32_t grouped_slab_id = 0; grouped_slab_id < slab_num/1024; ++grouped_slab_id) {
+        mog_free_gpu(device_id, grouped_slabs[grouped_slab_id]);
+    }
+
+    return 0;
+}
 
 int32_t GpuCache::read(const std::string& key, char *value) {
 

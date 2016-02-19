@@ -48,6 +48,8 @@ public:
     int32_t write(const std::string& key, const char *value, int32_t length);
     int32_t read(const std::string& key, char *value);
     int32_t gpu_read(const int32_t device_id, const std::string& key, char *value);
+    int32_t sync();
+    int32_t close();
 
 private:
     int32_t initial_para(const std::string& config_file);

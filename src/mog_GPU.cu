@@ -31,6 +31,12 @@ char* mog_malloc_gpu(int32_t device_id,
 	return data_p;
 }
 
+void mog_free_gpu(int32_t device_id, 
+				char* data_p) {
+	cudaSetDevice(device_id);
+	cudaFree ((void*) data_p);
+}
+
 void mog_memcpy_cpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t slabe_size) {
 	cudaSetDevice(device_id);
 	HANDLE_ERROR(cudaMemcpy(dst, src, slabe_size, cudaMemcpyHostToDevice));
