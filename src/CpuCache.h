@@ -69,8 +69,8 @@ public:
     int32_t read(const std::string& key, char *value);
 
     int32_t insert(const std::string &key,
-            const IndexInfo &central_index_info,
-            char *value);
+                   const IndexInfo &central_index_info,
+                   char *value);
 
     int32_t close();
 };

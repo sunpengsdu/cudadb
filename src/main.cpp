@@ -26,6 +26,10 @@ int main(int argc, char**argv) {
     char aa[1024*1024*2];
     int32_t l = 0;
 
+    int32_t ttt = DB.insert_file("ttt.jpg", "/home/sunp/18/race_data/asian_female/sy/__machine5_2015-11-21_0-0-0-1-94-24-42_2015-11-21_10-16-47_jpg_498_943_173_173.jpg");
+
+    LOG(INFO) << "##$#$#$$$$$$$$$$$$$$$$" << ttt;
+
     CHECK_EQ(DB.write("wgrfgre2", bb, 1024*1000), MOG_SUCCESS);
     CHECK_EQ(DB.write("wgrfgre3", bb, 1024*1000), MOG_SUCCESS);
     CHECK_EQ(DB.write("wgrfgre4", bb, 1024*1000), MOG_SUCCESS);
@@ -66,10 +70,10 @@ int main(int argc, char**argv) {
     std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
 
 
-    char* gpu_temp_p = mog_malloc_gpu(1, 1024*1024*2);
-    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
-    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
-    std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
+//    char* gpu_temp_p = mog_malloc_gpu(1, 1024*1024*2);
+//    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
+//    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
+//    std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
 
     DB.close();
 

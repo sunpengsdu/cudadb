@@ -45,11 +45,13 @@ public:
     int32_t setup(const std::string& config_file);
     int32_t open(const std::string& db_name);
     bool    exist(const std::string& db_name);
+    int32_t insert_file(const std::string &key, const std::string& file_path);
     int32_t write(const std::string& key, const char *value, int32_t length);
     int32_t read(const std::string& key, char *value);
     int32_t gpu_read(const int32_t device_id, const std::string& key, char *value);
     int32_t sync();
     int32_t close();
+    static char* malloc_gpu(int32_t device_id, int32_t size);
 
 private:
     int32_t initial_para(const std::string& config_file);

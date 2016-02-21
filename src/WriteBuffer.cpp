@@ -31,11 +31,10 @@ WriteBuffer& WriteBuffer::singleton() {
    static WriteBuffer write_buffer;
    return write_buffer;
 }
-
-
 int32_t WriteBuffer::initial(const int32_t page_size,
-                            const int32_t page_per_block,
-                            const int32_t page_num) {
+    const int32_t page_per_block,
+    const int32_t page_num) {
+
     this->page_size      = page_size;
     this->page_per_block = page_per_block;
     this->page_num       = page_num;
@@ -45,19 +44,18 @@ int32_t WriteBuffer::initial(const int32_t page_size,
     int32_t temp_num = 0;
     int32_t tempt_read_len;
     tempt_read_len = CentraIndex::singleton().get("FILE_NUM",
-                                            strlen("FILE_NUM"),
-                                            (char*)&temp_num,
-                                            sizeof(temp_num));
+        strlen("FILE_NUM"),
+        (char*)&temp_num,
+        sizeof(temp_num));
+
     if (tempt_read_len != 0) {
         this->latest_block_id = temp_num;
     } else {
         this->latest_block_id = 0;
     }
-
     this->flush_thread_pool = new boost::threadpool::pool(flush_thread_num);
     this->kv_store.reserve(this->max_page_num*1024*1.2);
     this->blocks.reserve(this->max_page_num*1.2);
-
 //    this->latest_block_id= 0;
     return WRITEBUFFER_SUCCESS;
 }
@@ -76,22 +74,16 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
     }
     LOG(INFO) << "WriteBuffer Size: " << this->total_size
             <<" Max Size: " << this->max_page_num * this->page_size;
-
     while (this->total_size > this->max_page_num * this->page_size) {
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
-
     while (SSDCache::singleton().block_num >= SSDCache::singleton().max_block_num) {
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
-
     wbuffer_writeLock write_lock(this->wbuffer_lock);
-
     size_t hashed_key  = std::hash<std::string>()(key);
-
     auto existed_key = this->kv_store.find(hashed_key);
     bool existence = false;
-
     if (existed_key != this->kv_store.end()) {
         return 1;
         //***********************
@@ -102,7 +94,6 @@ int32_t WriteBuffer::write(const std::string& key, const char *value, int32_t le
         this->total_size.fetch_sub(WriteBuffer::slab_size[length_type]);
         this->total_size_without_block.fetch_sub(WriteBuffer::slab_size[length_type]);
     }
-
 //    this->kv_store[hashed_key].w_lock = 1;
 //    this->kv_store[hashed_key].r_lock = 0;
     this->kv_store[hashed_key].key  = key;
@@ -164,9 +155,7 @@ void WriteBuffer::flush(int32_t block_id) {
     int32_t flushed_size = 0;
     int32_t key_num = 0;
     std::string string_block_id = std::to_string(block_id);
-    std::string fout_name = WriteBuffer::singleton().ssd_path
-                    + "/"
-                    + string_block_id;
+    std::string fout_name = WriteBuffer::singleton().ssd_path + "/" + string_block_id;
     std::ofstream fout(fout_name);
     int32_t offset = 0;
     IndexInfo new_record;
@@ -207,11 +196,12 @@ void WriteBuffer::flush(int32_t block_id) {
     WriteBuffer::singleton().blocks.erase(block_id);
     WriteBuffer::singleton().total_size.fetch_sub(flushed_size);
     LOG(INFO) << "FLUSH BLOCK "
-            << block_id
-            << " FROM BUFFER TO SSD";
-
-    LOG(INFO) << "WriteBuffer Size: " << WriteBuffer::singleton().total_size
-                <<" Max Size: " << WriteBuffer::singleton().max_page_num * WriteBuffer::singleton().page_size;
+              << block_id
+              << " FROM BUFFER TO SSD";
+    LOG(INFO) << "WriteBuffer Size: " 
+              << WriteBuffer::singleton().total_size
+              <<" Max Size: "
+              << WriteBuffer::singleton().max_page_num * WriteBuffer::singleton().page_size;
 }
 
 int32_t WriteBuffer::sync() {
@@ -222,10 +212,8 @@ int32_t WriteBuffer::sync() {
         size_t temp_hashed_key = 0;
         int32_t temp_slab_type;
         bool w_lock = false;
-
         while (! this->kv_list.empty()) {
             temp_hashed_key = this->kv_list.front();
-
             temp_slab_type  = this->kv_store[temp_hashed_key].value_length_type;
             if (new_block_size + WriteBuffer::slab_size[temp_slab_type] >
                 this->page_per_block*1024*1024) {
@@ -243,9 +231,9 @@ int32_t WriteBuffer::sync() {
         auto flush_func = std::bind(WriteBuffer::flush, latest_block_id);
         flush_thread_pool->schedule(flush_func);
         CentraIndex::singleton().put("FILE_NUM",
-                strlen("FILE_NUM"),
-                (char*)&latest_block_id,
-                sizeof(latest_block_id));
+            strlen("FILE_NUM"),
+            (char*)&latest_block_id,
+            sizeof(latest_block_id));
     }
 
     while(flush_thread_pool->active() > 0 || flush_thread_pool->pending() > 0) {

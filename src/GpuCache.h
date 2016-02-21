@@ -35,9 +35,9 @@ typedef boost::unique_lock<gpu_cache_rwmutex> gpu_cache_writeLock;
 
 
 extern void mog_malloc_gpu(int32_t device_id,
-                int32_t slab_size,
-                char** slabs,
-                int32_t slab_id);
+                           int32_t slab_size,
+                           char** slabs,
+                           int32_t slab_id);
 
 extern void mog_memcpy_cpu_to_gpu(int32_t device_id, char* dst, const char* src, int32_t page_size);
 
@@ -94,9 +94,9 @@ public:
 
     int32_t read(const std::string& key, char *value);
     int32_t insert(const std::string &key,
-            const int32_t length,
-            const int32_t length_type,
-            char *value);
+                   const int32_t length,
+                   const int32_t length_type,
+                   char *value);
 };
 
 } /* namespace cap */

@@ -8,6 +8,8 @@
 
 #include "mog.h"
 
+extern char* mog_malloc_gpu(int32_t device_id, int32_t size);
+
 namespace cap {
 
 //! DB constructor
@@ -188,28 +190,22 @@ int32_t mog::allocate_memory() {
 //! Create a new DB
 int32_t mog::create() {
 
-    boost::filesystem::path db_file_path_ssd = boost::filesystem::path(ssd_path + "/" +
-                                                                       db_name+
-                                                                       ".mog");
-
+    boost::filesystem::path db_file_path_ssd = boost::filesystem::path(ssd_path + "/" + db_name + ".mog");
     boost::filesystem::path path_ssd = boost::filesystem::path(ssd_path);
     boost::filesystem::path path_dfs = boost::filesystem::path(dfs_path);
-
     boost::filesystem::remove_all(path_ssd);
     boost::filesystem::create_directories(db_file_path_ssd);
-
     boost::filesystem::remove_all(path_dfs);
     boost::filesystem::create_directories(path_dfs);
 
-
-    CentraIndex::singleton().setup(ssd_path + "/" +
-            db_name+
-            ".mog");
+    CentraIndex::singleton().setup(ssd_path + "/" + db_name + ".mog");
     int32_t initial_block_id = 0;
-    CentraIndex::singleton().put("FILE_NUM",
-            strlen("FILE_NUM"),
-            (char*)&initial_block_id,
-            sizeof(initial_block_id));
+
+    CentraIndex::singleton().put("FILE_NUM", 
+        strlen("FILE_NUM"), 
+        (char*)&initial_block_id,
+        sizeof(initial_block_id));
+
     allocate_memory();
     LOG(INFO) << "Create a new Mog: "
               << this->db_name;
@@ -219,27 +215,20 @@ int32_t mog::create() {
 //! Load an existed DB
 int32_t mog::load() {
     boost::filesystem::path db_file_path_ssd = boost::filesystem::path(ssd_path + "/");
-
     boost::filesystem::path path_ssd = boost::filesystem::path(ssd_path);
     boost::filesystem::remove_all(path_ssd);
     boost::filesystem::create_directory(path_ssd);
-
     std::string db_file_path_ssd_c = ssd_path + "/";
     std::string db_file_path_dfs_c = dfs_path + "/" + db_name+ ".mog";
-
     char cmd[256];
     sprintf(cmd, "cp -r %s %s", db_file_path_dfs_c.c_str(), db_file_path_ssd_c.c_str());
     system(cmd);
-
-    CentraIndex::singleton().load(ssd_path + "/" +
-                                    db_name+
-                                    ".mog");
+    CentraIndex::singleton().load(ssd_path + "/" + db_name + ".mog");
 
     LOG(INFO) << "Load an existed Mog: "
               << this->db_name;
 
     allocate_memory();
-
     return MOG_SUCCESS;
 }
 
@@ -265,9 +254,9 @@ int32_t mog::open(const std::string& db_name) {
     \return true if exists; otherwise false
  */
 bool mog::exist(const std::string& db_name) {
-    boost::filesystem::path db_file_path = boost::filesystem::path(dfs_path + "/" +
-                                                                db_name+
-                                                                ".mog");
+    boost::filesystem::path db_file_path = 
+        boost::filesystem::path(dfs_path + "/" + db_name + ".mog");
+    
     if (boost::filesystem::exists(db_file_path)) {
         LOG(INFO) << "The DB file "
                   << db_name
@@ -284,20 +273,19 @@ bool mog::exist(const std::string& db_name) {
 int32_t mog::sync() {
     WriteBuffer::singleton().sync();
     SSDCache::singleton().sync();
-
     return MOG_SUCCESS;
+}
+
+char* mog::malloc_gpu(int32_t device_id, int32_t size) {
+    return mog_malloc_gpu(device_id, size);
 }
 
 int32_t mog::close() {
     sync();
-
     LOG(INFO) << "Sync Data to DFS\n";
-
     CentraIndex::singleton().close();
-
-    boost::filesystem::path db_file_path_dfs = boost::filesystem::path(dfs_path + "/" +
-                                                                    db_name+
-                                                                    ".mog");
+    boost::filesystem::path db_file_path_dfs = 
+        boost::filesystem::path(dfs_path + "/" + db_name + ".mog");
 
     std::string db_file_path_ssd_c = ssd_path + "/" + db_name+ ".mog";
     std::string db_file_path_dfs_c = dfs_path + "/";
@@ -337,11 +325,36 @@ int32_t mog::write(const std::string& key, const char *value, int32_t length) {
     return MOG_SUCCESS;
 }
 
-
 int32_t mog::gpu_read(const int32_t device_id, const std::string& key, char *value) {
     int32_t length = 0;
     length = this->gpu_caches[device_id]->read(key, value);
     return length;
+}
+
+int32_t mog::insert_file(const std::string &key, const std::string &file_path) {
+    std::ifstream ifs(file_path);
+    if (! ifs.is_open()) {
+        return -1;
+    }
+
+    ifs.seekg(0, ifs.end);
+    int32_t length = ifs.tellg();
+    ifs.seekg(0, ifs.beg);
+    if (length > 1024*1024) {
+        return -1;
+    }
+    char *buffer = new char[length+1];
+    ifs.read(buffer, length);
+    ifs.close();
+
+    int32_t res = this->write(key, buffer, length);
+    delete[] buffer;
+
+    if (res == 0) {
+        return length;
+    } else {
+        return -1;
+    }
 }
 
 int32_t mog::read(const std::string& key, char *value) {

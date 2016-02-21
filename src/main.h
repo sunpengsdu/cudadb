@@ -13,6 +13,4 @@
 #include <iostream>
 #include "glog/logging.h"
 
-extern char* mog_malloc_gpu(int32_t device_id,
-                int32_t size);
 #endif

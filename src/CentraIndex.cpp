@@ -21,8 +21,8 @@ CentraIndex::~CentraIndex() {
 }
 
 CentraIndex& CentraIndex::singleton() {
-   static CentraIndex centra_index;
-   return centra_index;
+    static CentraIndex centra_index;
+    return centra_index;
 }
 
 int32_t CentraIndex::setup(const std::string &name) {
@@ -67,7 +67,6 @@ int32_t CentraIndex::load(const std::string &name) {
     return 0;
 }
 
-
 int32_t CentraIndex::close() {
     leveldb_close(this->db);
     return 0;
@@ -75,14 +74,15 @@ int32_t CentraIndex::close() {
 
 int32_t CentraIndex::put(const char* key, int32_t key_length,  const char* value, int32_t value_length) {
     char *put_err = NULL;
-   // LOG(INFO) << key << "->" << value;
+    // LOG(INFO) << key << "->" << value;
     leveldb_put(this->db,
-            this->woptions,
-            key,
-            key_length,
-            value,
-            value_length,
-            &put_err);
+        this->woptions,
+        key,
+        key_length,
+        value,
+        value_length,
+        &put_err);
+
     if (put_err != NULL) {
         LOG(WARNING) << "CentraIndex Put Error\n";
         leveldb_free(put_err);
@@ -96,17 +96,18 @@ int32_t CentraIndex::get(const char* key, int32_t key_length, char *value, int32
     char *temp_result;
     size_t value_length;
     temp_result = leveldb_get(this->db,
-            this->roptions,
-            key,
-            key_length,
-            &value_length,
-            &get_err);
+        this->roptions,
+        key,
+        key_length,
+        &value_length,
+        &get_err);
+
     if (get_err != NULL) {
         LOG(WARNING) << "CentraIndex Get Error\n";
         leveldb_free(get_err);
         return 0;
     } else {
-        if (temp_result != NULL && buffer_length >= value_length) {
+        if (temp_result != NULL && buffer_length >= (signed)value_length) {
             memcpy(value, temp_result, value_length);
             leveldb_free(temp_result);
             leveldb_free(get_err);
@@ -123,6 +124,3 @@ int32_t CentraIndex::get(const char* key, int32_t key_length, char *value, int32
 }
 
 } /* namespace cap */
-
-
-
