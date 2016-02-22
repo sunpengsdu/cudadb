@@ -34,10 +34,10 @@ typedef boost::unique_lock<cpu_cache_rwmutex> cpu_cache_writeLock;
 namespace cap {
 
 struct CPUCachedItem {
-    //int32_t key;
-    int32_t length;
-    int32_t length_type;
-    std::vector<int32_t> slabs;
+    //int64_t key;
+    int64_t length;
+    int64_t length_type;
+    std::vector<int64_t> slabs;
 };
 
 class CpuCache {
@@ -46,33 +46,33 @@ public:
     virtual ~CpuCache();
 
     cpu_cache_rwmutex rw_cache_lock;
-    int32_t page_size;
-    int32_t slab_num;
-    int32_t page_num;
-    std::atomic<int32_t> free_slab_num;
+    int64_t page_size;
+    int64_t slab_num;
+    int64_t page_num;
+    std::atomic<int64_t> free_slab_num;
     //std::mutex cached_item_queue_lock;
 
-    std::queue<int32_t> free_slabs;
+    std::queue<int64_t> free_slabs;
 
 
     std::unordered_map<std::string, CPUCachedItem> cached_item;
     std::queue<std::string> cached_item_queue;
 
     char**  slabs;
-    int32_t initial_flag = 0;
-    static const int32_t slab_size[11];//KB
+    int64_t initial_flag = 0;
+    static const int64_t slab_size[11];//KB
 
     static CpuCache& singleton();
-    int32_t initial(const int32_t page_size, const int32_t page_num);
-    int32_t allocate_memory();
+    int64_t initial(const int64_t page_size, const int64_t page_num);
+    int64_t allocate_memory();
 
-    int32_t read(const std::string& key, char *value);
+    int64_t read(const std::string& key, char *value);
 
-    int32_t insert(const std::string &key,
+    int64_t insert(const std::string &key,
                    const IndexInfo &central_index_info,
                    char *value);
 
-    int32_t close();
+    int64_t close();
 };
 
 } /* namespace cap */

@@ -9,7 +9,7 @@
 
 namespace cap {
 
-const int32_t CpuCache::slab_size[11] = {1*1024, 2*1024, 4*1024, 8*1024, 16*1024,
+const int64_t CpuCache::slab_size[11] = {1*1024, 2*1024, 4*1024, 8*1024, 16*1024,
                                          32*1024, 64*1024, 128*1024, 256*1024,
                                          512*1024, 1024*1024
                                         };
@@ -30,37 +30,36 @@ CpuCache& CpuCache::singleton() {
     return cpu_cache;
 }
 
-int32_t CpuCache::initial(const int32_t page_size, const int32_t page_num) {
-
+int64_t CpuCache::initial(const int64_t page_size, const int64_t page_num) {
     this->page_size = page_size;
     this->page_num  = page_num;
-    this->slab_num  = (page_num * page_size)/1024;
-    this->slabs     = new char*[slab_num];
+    this->slab_num  = page_num * page_size / 1024;
+    this->slabs     = new char*[this->slab_num];
     this->free_slab_num = 0;
-
     this->cached_item.reserve(this->slab_num * 1.1);
 
     this->initial_flag = 0;
     return CPUCACHE_SUCCESS;
 }
-int32_t CpuCache::allocate_memory() {
+int64_t CpuCache::allocate_memory() {
+
     CHECK_EQ(initial_flag, 0);
     free_slab_num = slab_num;
-    for (int32_t slab_id = 0; slab_id < slab_num; ++slab_id) {
-        slabs[slab_id] = (char *)malloc(1024);
+    for (int64_t slab_id = 0; slab_id < slab_num; ++slab_id) {
+        slabs[slab_id] = new char[1024];
         memset(slabs[slab_id], 0, 1024);
         this->free_slabs.push(slab_id);
     }
     return CPUCACHE_SUCCESS;
 }
 
-int32_t CpuCache::insert(const std::string &key,
+int64_t CpuCache::insert(const std::string &key,
                          const IndexInfo &central_index_info,
                          char *value) {
 
     cpu_cache_writeLock lock_cpu_cache_insert(rw_cache_lock);
 
-    LOG(INFO) << "RAM CACHE TRY INSERT " << key;
+//    LOG(INFO) << "RAM CACHE TRY INSERT " << key;
 
     if (this->free_slab_num < pow(2, central_index_info.length_type)) {
         while (true) {
@@ -72,8 +71,8 @@ int32_t CpuCache::insert(const std::string &key,
                 this->free_slabs.push(freed_slab);
             }
             this->cached_item.erase(deleted_item);
-            LOG(INFO) << "RAM CACHE DELETE: " << deleted_item;
-            LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
+//            LOG(INFO) << "RAM CACHE DELETE: " << deleted_item;
+//            LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
             if (this->free_slab_num >= pow(2, central_index_info.length_type)) {
                 break;
             }
@@ -82,8 +81,8 @@ int32_t CpuCache::insert(const std::string &key,
     this->cached_item[key].length = central_index_info.length;
     this->cached_item[key].length_type = central_index_info.length_type;
 
-    int32_t new_slab_id = 0;
-    for (int32_t i = 0; i < (pow(2, central_index_info.length_type)); ++i) {
+    int64_t new_slab_id = 0;
+    for (int64_t i = 0; i < (pow(2, central_index_info.length_type)); ++i) {
         new_slab_id = this->free_slabs.front();
         this->cached_item[key].slabs.push_back(new_slab_id);
         memcpy(this->slabs[new_slab_id], value + i*1024, 1024);
@@ -91,27 +90,27 @@ int32_t CpuCache::insert(const std::string &key,
         this->free_slab_num.fetch_sub(1);
     }
     this->cached_item_queue.push(key);
-    LOG(INFO) << "RAM CACHE INSERT " << key;
-    LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
+//    LOG(INFO) << "RAM CACHE INSERT " << key;
+//    LOG(INFO) << "RAM CACHE FREE SLABS " << this->free_slab_num;
     return 0;
 }
 
-int32_t CpuCache::close() {
+int64_t CpuCache::close() {
     this->cached_item.clear();
-    for (int32_t slab_id = 0; slab_id < slab_num; ++slab_id) {
+    for (int64_t slab_id = 0; slab_id < slab_num; ++slab_id) {
         delete slabs[slab_id];
     }
     return 0;
 }
 
-int32_t CpuCache::read(const std::string& key, char *value) {
+int64_t CpuCache::read(const std::string& key, char *value) {
 
     auto target_item = this->cached_item.find(key);
     //there is no such item in the cache
     if(target_item == this->cached_item.end()) {
-        LOG(INFO) << "RAM CACHE MISS " << key;
+//        LOG(INFO) << "RAM CACHE MISS " << key;
         IndexInfo key_centra_index;
-        int32_t index_read_length = 0;
+        int64_t index_read_length = 0;
         //find in central index
         index_read_length = CentraIndex::singleton().get(key.c_str(),
             key.length(),

@@ -34,8 +34,8 @@
 namespace cap {
 
 //struct SSDCachedInfo {
-//    int32_t block_id;
-//    int32_t file_size;
+//    int64_t block_id;
+//    int64_t file_size;
 //};
 
 typedef boost::shared_mutex ssd_cache_rwmutex;
@@ -47,24 +47,25 @@ public:
     SSDCache();
     virtual ~SSDCache();
 
-    static void flush(int32_t block_id);
-    static void fetch(int32_t block_id);
+    static void flush(int64_t block_id);
+    static void fetch(int64_t block_id);
 
-    int32_t max_block_num;
-    std::atomic<int32_t> block_num;
+    int64_t max_block_num;
+    std::atomic<int64_t> block_num;
 
     boost::threadpool::pool *thread_pool;
 
     std::string ssd_path;
     std::string dfs_path;
-    std::unordered_map<int32_t, int32_t> unsynced_block_id;
-    std::deque<int32_t> cached_block_id;
-    std::unordered_map<int32_t, int32_t> cached_block;
-    std::vector<int32_t> cached_block_handle_id;
+    std::unordered_map<int64_t, int64_t> unsynced_block_id;
+    std::deque<int64_t> cached_block_id;
+    std::unordered_map<int64_t, int64_t> cached_block;
+    std::unordered_map<int64_t, int64_t> caching_block;
+    std::vector<int64_t> cached_block_handle_id;
 
     std::mutex read_record_lock;
-    std::map<int32_t, int32_t> read_record;
-    std::atomic<int32_t> read_num;
+    std::map<int64_t, int64_t> read_record;
+    std::atomic<int64_t> read_num;
 
     ssd_cache_rwmutex ssd_cache_rwlock;
 
@@ -72,16 +73,11 @@ public:
     std::mutex cached_block_lock;
     std::mutex cached_block_handle_lock;
 
-    int32_t initial();
-
-    int32_t new_block(int32_t block_id);
-
-    int32_t sync();
-
-    int32_t close();
-
-    int32_t read(const std::string &key, const IndexInfo &key_info, char* value);
-
+    int64_t initial();
+    int64_t new_block(int64_t block_id);
+    int64_t sync();
+    int64_t close();
+    int64_t read(const std::string &key, const IndexInfo &key_info, char* value);
     static SSDCache& singleton();
 };
 

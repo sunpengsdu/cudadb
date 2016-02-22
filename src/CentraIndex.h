@@ -26,10 +26,10 @@ struct leveldb_options_t {
 namespace cap {
 
 struct IndexInfo {
-    int32_t block_id;
-    int32_t offset;
-    int32_t length;
-    int32_t length_type;
+    int64_t block_id;
+    int64_t offset;
+    int64_t length;
+    int64_t length_type;
 };
 
 class CentraIndex {
@@ -38,12 +38,12 @@ public:
     virtual ~CentraIndex();
 
     static CentraIndex& singleton();
-    int32_t setup(const std::string &name);
-    int32_t load(const std::string &name);
+    int64_t setup(const std::string &name);
+    int64_t load(const std::string &name);
 
-    int32_t put(const char* key, int32_t key_length, const char* value, int32_t value_length);
-    int32_t get(const char* key, int32_t key_length, char *value, int32_t buffer_length);
-    int32_t close();
+    int64_t put(const char* key, int64_t key_length, const char* value, int64_t value_length);
+    int64_t get(const char* key, int64_t key_length, char *value, int64_t buffer_length);
+    int64_t close();
 
 
     leveldb_t* db;

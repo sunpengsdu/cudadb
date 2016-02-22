@@ -8,6 +8,8 @@
 
 #include "main.h"
 #include "mog.h"
+#include <cstdlib>
+#include <ctime>
 
 int main(int argc, char**argv) {
 
@@ -20,22 +22,33 @@ int main(int argc, char**argv) {
 
     cap::mog DB;
     CHECK_EQ(DB.open("www"), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre", "2", 1), MOG_SUCCESS);
+    DB.write("wgrfgre", "2", 1);
     char bb[1024*1024*2];
     bb[0]='2';
     char aa[1024*1024*2];
-    int32_t l = 0;
+    int64_t l = 0;
 
-    int32_t ttt = DB.insert_file("ttt.jpg", "/home/sunp/18/race_data/asian_female/sy/__machine5_2015-11-21_0-0-0-1-94-24-42_2015-11-21_10-16-47_jpg_498_943_173_173.jpg");
+    int64_t file_num = 0;
 
-    LOG(INFO) << "##$#$#$$$$$$$$$$$$$$$$" << ttt;
+//    std::srand(std::time(0));
+//    for (file_num=0; file_num <= 1000000; ++file_num) {
+//        int64_t file_size = std::rand() % 1048576;
+//        l = DB.write(std::to_string(file_num).c_str(), aa, file_size);
+//    }
 
-    CHECK_EQ(DB.write("wgrfgre2", bb, 1024*1000), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre3", bb, 1024*1000), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre4", bb, 1024*1000), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre5", bb, 1024*1000), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre6", bb, 1024*1000), MOG_SUCCESS);
-    CHECK_EQ(DB.write("wgrfgre7", bb, 1024*1000), MOG_SUCCESS);
+//    for (; file_num <= 100000; ++file_num) {
+//        int64_t ttt = DB.insert_file(std::to_string(file_num).c_str(), "/home/sunp/18/race_data/asian_female/sy/__machine5_2015-11-21_0-0-0-1-94-24-42_2015-11-21_10-16-47_jpg_498_943_173_173.jpg");
+//    }
+
+
+   // LOG(INFO) << "##$#$#$$$$$$$$$$$$$$$$" << ttt;
+
+    DB.write("wgrfgre2", bb, 1024*1000);
+    DB.write("wgrfgre3", bb, 1024*1000);
+    DB.write("wgrfgre4", bb, 1024*1000);
+    DB.write("wgrfgre5", bb, 1024*1000);
+    DB.write("wgrfgre6", bb, 1024*1000);
+    DB.write("wgrfgre7", bb, 1024*1000);
     l = DB.read("wgrfgre5", aa);
    // CHECK_EQ(DB.write("wgrfgre2", bb, 1024*1000), MOG_SUCCESS);
 
@@ -68,7 +81,16 @@ int main(int argc, char**argv) {
     l = DB.read("wgrfgre4", aa);
     l = DB.read("wgrfgre5", aa);
     std::cout << l << "!!!" << aa << "@@@@@@@@@@@@@@\n";
+    char* g_aa = cap::mog::malloc_gpu(0, 1024*1024*2);
 
+    int64_t read_num = 0;
+    std::srand(std::time(0));
+
+    
+    for (read_num=0; read_num <= 1000000; ++read_num) {
+        int64_t read_id = std::rand() % 100000;
+        l = DB.gpu_read(0, std::to_string(read_id).c_str(), g_aa);
+    }
 
 //    char* gpu_temp_p = mog_malloc_gpu(1, 1024*1024*2);
 //    l = DB.gpu_read(1, "wgrfgre5", gpu_temp_p);
@@ -77,6 +99,5 @@ int main(int argc, char**argv) {
 
     DB.close();
 
-    while(1);
     return 0;
 }

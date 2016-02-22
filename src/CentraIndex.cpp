@@ -25,7 +25,7 @@ CentraIndex& CentraIndex::singleton() {
     return centra_index;
 }
 
-int32_t CentraIndex::setup(const std::string &name) {
+int64_t CentraIndex::setup(const std::string &name) {
     this->name = name;
     this->options = leveldb_options_create();
     this->cache = leveldb_cache_create_lru(128*1024*1024);
@@ -46,7 +46,7 @@ int32_t CentraIndex::setup(const std::string &name) {
     return 0;
 }
 
-int32_t CentraIndex::load(const std::string &name) {
+int64_t CentraIndex::load(const std::string &name) {
     this->name = name;
     this->options = leveldb_options_create();
     this->cache = leveldb_cache_create_lru(128*1024*1024);
@@ -67,12 +67,12 @@ int32_t CentraIndex::load(const std::string &name) {
     return 0;
 }
 
-int32_t CentraIndex::close() {
+int64_t CentraIndex::close() {
     leveldb_close(this->db);
     return 0;
 }
 
-int32_t CentraIndex::put(const char* key, int32_t key_length,  const char* value, int32_t value_length) {
+int64_t CentraIndex::put(const char* key, int64_t key_length,  const char* value, int64_t value_length) {
     char *put_err = NULL;
     // LOG(INFO) << key << "->" << value;
     leveldb_put(this->db,
@@ -91,7 +91,7 @@ int32_t CentraIndex::put(const char* key, int32_t key_length,  const char* value
         return 0;
     }
 }
-int32_t CentraIndex::get(const char* key, int32_t key_length, char *value, int32_t buffer_length) {
+int64_t CentraIndex::get(const char* key, int64_t key_length, char *value, int64_t buffer_length) {
     char *get_err = NULL;
     char *temp_result;
     size_t value_length;

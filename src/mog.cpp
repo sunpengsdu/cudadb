@@ -8,7 +8,7 @@
 
 #include "mog.h"
 
-extern char* mog_malloc_gpu(int32_t device_id, int32_t size);
+extern char* mog_malloc_gpu(int64_t device_id, int64_t size);
 
 namespace cap {
 
@@ -28,7 +28,7 @@ mog::mog(const std::string& config_file) {
 mog::~mog() {
 }
 
-int32_t mog::setup(const std::string& config_file) {
+int64_t mog::setup(const std::string& config_file) {
     CHECK_EQ(cuInit(0), CUDA_SUCCESS);
     get_device_num(&device_num);
     CHECK_NE(device_num, 0);
@@ -36,7 +36,7 @@ int32_t mog::setup(const std::string& config_file) {
     return MOG_SUCCESS;
 }
 
-int32_t mog::get_device_num(int32_t *num) {
+int64_t mog::get_device_num(int *num) {
     CHECK_EQ(cuDeviceGetCount(num), CUDA_SUCCESS);
     CHECK_NE(device_num, 0);
     LOG(INFO) << "Find " << *num << " GPUs";
@@ -48,7 +48,7 @@ int32_t mog::get_device_num(int32_t *num) {
   \param config_file configuration file path and name
   \return 0 if success
 */
-int32_t mog::initial_para(const std::string& config_file) {
+int64_t mog::initial_para(const std::string& config_file) {
 	//The default parameters
 	page_size       = 1*1024*1024;    //1 MB
 	cpu_page_num    = 1024;           //1024 pages
@@ -161,7 +161,7 @@ int32_t mog::initial_para(const std::string& config_file) {
 	return MOG_SUCCESS;
 }
 
-int32_t mog::allocate_memory() {
+int64_t mog::allocate_memory() {
     for (auto device_id : devices) {
         gpu_caches[device_id] = new GpuCache(device_id);
         CHECK_EQ(gpu_caches[device_id]->initial(page_size, gpu_page_num), GPUCACHE_SUCCESS);
@@ -170,6 +170,7 @@ int32_t mog::allocate_memory() {
     }
 
     CHECK_EQ(CpuCache::singleton().initial(page_size, cpu_page_num), CPUCACHE_SUCCESS);
+    LOG(INFO) << "---------> Initial CPU Cache Done";
     CHECK_EQ(CpuCache::singleton().allocate_memory(), CPUCACHE_SUCCESS);
     LOG(INFO) << "---------> Create CPU Cache Done";
     CHECK_EQ(WriteBuffer::singleton().initial(page_size, page_per_block, buffer_page_num), WRITEBUFFER_SUCCESS);
@@ -188,7 +189,7 @@ int32_t mog::allocate_memory() {
 }
 
 //! Create a new DB
-int32_t mog::create() {
+int64_t mog::create() {
 
     boost::filesystem::path db_file_path_ssd = boost::filesystem::path(ssd_path + "/" + db_name + ".mog");
     boost::filesystem::path path_ssd = boost::filesystem::path(ssd_path);
@@ -199,7 +200,7 @@ int32_t mog::create() {
     boost::filesystem::create_directories(path_dfs);
 
     CentraIndex::singleton().setup(ssd_path + "/" + db_name + ".mog");
-    int32_t initial_block_id = 0;
+    int64_t initial_block_id = 0;
 
     CentraIndex::singleton().put("FILE_NUM", 
         strlen("FILE_NUM"), 
@@ -213,7 +214,7 @@ int32_t mog::create() {
 }
 
 //! Load an existed DB
-int32_t mog::load() {
+int64_t mog::load() {
     boost::filesystem::path db_file_path_ssd = boost::filesystem::path(ssd_path + "/");
     boost::filesystem::path path_ssd = boost::filesystem::path(ssd_path);
     boost::filesystem::remove_all(path_ssd);
@@ -238,7 +239,7 @@ int32_t mog::load() {
     \return 0 if success
 */
 
-int32_t mog::open(const std::string& db_name) {
+int64_t mog::open(const std::string& db_name) {
     this->db_name = db_name;
     if (exist(db_name)) {
         load();
@@ -270,17 +271,17 @@ bool mog::exist(const std::string& db_name) {
     }
 }
 
-int32_t mog::sync() {
+int64_t mog::sync() {
     WriteBuffer::singleton().sync();
     SSDCache::singleton().sync();
     return MOG_SUCCESS;
 }
 
-char* mog::malloc_gpu(int32_t device_id, int32_t size) {
+char* mog::malloc_gpu(int64_t device_id, int64_t size) {
     return mog_malloc_gpu(device_id, size);
 }
 
-int32_t mog::close() {
+int64_t mog::close() {
     sync();
     LOG(INFO) << "Sync Data to DFS\n";
     CentraIndex::singleton().close();
@@ -320,25 +321,28 @@ int32_t mog::close() {
     return MOG_SUCCESS;
 }
 
-int32_t mog::write(const std::string& key, const char *value, int32_t length) {
-    WriteBuffer::singleton().write(key, value, length);
-    return MOG_SUCCESS;
+int64_t mog::write(const std::string& key, const char *value, int64_t length) {
+    if (WriteBuffer::singleton().write(key, value, length) == 0) {
+        return MOG_SUCCESS;
+    } else {
+        return -1;
+    }
 }
 
-int32_t mog::gpu_read(const int32_t device_id, const std::string& key, char *value) {
-    int32_t length = 0;
+int64_t mog::gpu_read(const int64_t device_id, const std::string& key, char *value) {
+    int64_t length = 0;
     length = this->gpu_caches[device_id]->read(key, value);
     return length;
 }
 
-int32_t mog::insert_file(const std::string &key, const std::string &file_path) {
+int64_t mog::insert_file(const std::string &key, const std::string &file_path) {
     std::ifstream ifs(file_path);
     if (! ifs.is_open()) {
         return -1;
     }
 
     ifs.seekg(0, ifs.end);
-    int32_t length = ifs.tellg();
+    int64_t length = ifs.tellg();
     ifs.seekg(0, ifs.beg);
     if (length > 1024*1024) {
         return -1;
@@ -347,7 +351,7 @@ int32_t mog::insert_file(const std::string &key, const std::string &file_path) {
     ifs.read(buffer, length);
     ifs.close();
 
-    int32_t res = this->write(key, buffer, length);
+    int64_t res = this->write(key, buffer, length);
     delete[] buffer;
 
     if (res == 0) {
@@ -357,8 +361,8 @@ int32_t mog::insert_file(const std::string &key, const std::string &file_path) {
     }
 }
 
-int32_t mog::read(const std::string& key, char *value) {
-    int32_t length = 0;
+int64_t mog::read(const std::string& key, char *value) {
+    int64_t length = 0;
 
     length = WriteBuffer::singleton().read(key,value);
     if (length > 0) {

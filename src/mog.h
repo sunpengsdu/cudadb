@@ -42,43 +42,43 @@ public:
     mog(const std::string& config_file);
     ~mog();
 
-    int32_t setup(const std::string& config_file);
-    int32_t open(const std::string& db_name);
+    int64_t setup(const std::string& config_file);
+    int64_t open(const std::string& db_name);
     bool    exist(const std::string& db_name);
-    int32_t insert_file(const std::string &key, const std::string& file_path);
-    int32_t write(const std::string& key, const char *value, int32_t length);
-    int32_t read(const std::string& key, char *value);
-    int32_t gpu_read(const int32_t device_id, const std::string& key, char *value);
-    int32_t sync();
-    int32_t close();
-    static char* malloc_gpu(int32_t device_id, int32_t size);
+    int64_t insert_file(const std::string &key, const std::string& file_path);
+    int64_t write(const std::string& key, const char *value, int64_t length);
+    int64_t read(const std::string& key, char *value);
+    int64_t gpu_read(const int64_t device_id, const std::string& key, char *value);
+    int64_t sync();
+    int64_t close();
+    static char* malloc_gpu(int64_t device_id, int64_t size);
 
 private:
-    int32_t initial_para(const std::string& config_file);
-    int32_t get_device_num(int32_t *num);
-    int32_t allocate_memory();
+    int64_t initial_para(const std::string& config_file);
+    int64_t get_device_num(int *num);
+    int64_t allocate_memory();
 
-    int32_t create();
-    int32_t load();
+    int64_t create();
+    int64_t load();
 
     YAML::Node  yaml_config;
     std::string config_file;
-    int32_t device_num;
-    std::vector<int32_t> devices;
+    int device_num;
+    std::vector<int64_t> devices;
     std::string db_name;
 
-    int32_t page_size;
+    int64_t page_size;
     //cache is used for read operation
     //buffer is used for write operation
-    int32_t cpu_page_num;
-    int32_t gpu_page_num;
-    int32_t SSD_page_num;
-    int32_t page_per_block;;
-    int32_t buffer_page_num;
+    int64_t cpu_page_num;
+    int64_t gpu_page_num;
+    int64_t SSD_page_num;
+    int64_t page_per_block;;
+    int64_t buffer_page_num;
     std::string ssd_path;
     std::string dfs_path;
 
-    std::map<int32_t, GpuCache*> gpu_caches;
+    std::map<int64_t, GpuCache*> gpu_caches;
    // CpuCache cpu_caches;
    // WriteBuffer write_buffers;
 };
