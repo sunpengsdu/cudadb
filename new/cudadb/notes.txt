@@ -1,3 +1,0 @@
-sudo apt-get install libsnappy-dev libgflags-dev libgoogle-glog-dev
-sudo apt-get install libboost-all-dev
-install yaml-cpp

@@ -1,0 +1,9 @@
+page_size:  1024
+cpu_page_num:   6000
+gpu_page_num:   1024
+SSD_page_num:   1000
+page_per_block: 128
+buffer_page_num: 10000
+devices:    0,1
+ssd_path:   /ssd/mog
+hdd_path:   ./hdd

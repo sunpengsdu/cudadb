@@ -1,9 +1,0 @@
-page_size:  1024
-cpu_page_num:   1024
-gpu_page_num:   1024
-SSD_page_num:   256
-page_per_block: 64
-buffer_page_num:    1024
-devices:    0,1
-ssd_path:   ./ssd
-hdd_path:   ./hdd
