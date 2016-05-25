@@ -27,22 +27,20 @@ CentraIndex& CentraIndex::singleton() {
 
 int64_t CentraIndex::setup(const std::string &name) {
   this->name = name;
+  char* err = NULL;
   this->options = leveldb_options_create();
   this->cache = leveldb_cache_create_lru(128*1024*1024);
   this->woptions = leveldb_writeoptions_create();
   this->roptions = leveldb_readoptions_create();
-
   leveldb_options_set_create_if_missing(this->options, 1);
   leveldb_options_set_write_buffer_size(this->options, 128*1024*1024);
   leveldb_options_set_block_size(this->options, 64*1024);
   leveldb_options_set_cache(this->options, this->cache);
-  this->err = NULL;
-
-  this->db = leveldb_open(this->options, name.c_str(), &this->err);
-  if (this->err != NULL) {
+  this->db = leveldb_open(this->options, name.c_str(), &err);
+  if (err != NULL) {
     LOG(FATAL) << "CANNOT CREATE CentralIndex in " << name;
   }
-  leveldb_free(this->err);
+  leveldb_free(err);
   return 0;
 }
 
@@ -69,19 +67,17 @@ int64_t CentraIndex::load(const std::string &name) {
 
 int64_t CentraIndex::close() {
   leveldb_close(this->db);
+  leveldb_free(this->roptions);
+  leveldb_free(this->woptions);
+  leveldb_free(this->cache);
+  leveldb_free(this->options);
   return 0;
 }
 
 int64_t CentraIndex::put(const char* key, int64_t key_length,  const char* value, int64_t value_length) {
   char *put_err = NULL;
   // LOG(INFO) << key << "->" << value;
-  leveldb_put(this->db,
-              this->woptions,
-              key,
-              key_length,
-              value,
-              value_length,
-              &put_err);
+  leveldb_put(this->db, this->woptions, key, key_length, value, value_length, &put_err);
 
   if (put_err != NULL) {
     LOG(WARNING) << "CentraIndex Put Error\n";
@@ -95,13 +91,7 @@ int64_t CentraIndex::get(const char* key, int64_t key_length, char *value, int64
   char *get_err = NULL;
   char *temp_result;
   size_t value_length;
-  temp_result = leveldb_get(this->db,
-                            this->roptions,
-                            key,
-                            key_length,
-                            &value_length,
-                            &get_err);
-
+  temp_result = leveldb_get(this->db, this->roptions, key, key_length, &value_length, &get_err);
   if (get_err != NULL) {
     LOG(WARNING) << "CentraIndex Get Error\n";
     leveldb_free(get_err);

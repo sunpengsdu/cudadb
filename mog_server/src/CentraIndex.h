@@ -45,7 +45,6 @@ public:
   int64_t get(const char* key, int64_t key_length, char *value, int64_t buffer_length);
   int64_t close();
 
-
   leveldb_t* db;
   leveldb_options_t *options;
   leveldb_readoptions_t *roptions;

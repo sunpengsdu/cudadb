@@ -10,20 +10,19 @@
 namespace cap {
 
 SSDCache::SSDCache() {
-  // TODO Auto-generated constructor stub
   max_block_num = 0;
   block_num = 0;
   thread_pool = new boost::threadpool::pool(12);
   read_num = 0;
-  //cached_block.reserve(max_block_num*2);
-  // unsynced_block_id.reserve(max_block_num*2);
 }
 
 SSDCache::~SSDCache() {
-  // TODO Auto-generated destructor stub
 }
 
 int64_t SSDCache::initial() {
+  block_num = 0;
+  thread_pool = new boost::threadpool::pool(12);
+  read_num = 0;
   cached_block.reserve(max_block_num*1.5);
   unsynced_block_id.reserve(max_block_num*1.5);
   return 0;
@@ -42,8 +41,6 @@ void SSDCache::flush(int64_t block_id) {
 //LOG(INFO) << "FLUSH BLOCK " << block_id << " FROM SSD TO hdd";
 
   if (SSDCache::singleton().block_num >= SSDCache::singleton().max_block_num) {
-// LOG(INFO) << "Clean SSD Cache: BLOCKS->" << SSDCache::singleton().block_num
-//           << " MAX:->"  << SSDCache::singleton().max_block_num;
     while (1) {
       if (SSDCache::singleton().cached_block_id.size() == 0) {
         break;
@@ -131,9 +128,14 @@ int64_t SSDCache::sync() {
 }
 
 int64_t SSDCache::close() {
+  this->sync();
+  this->unsynced_block_id.clear();
   this->cached_block.clear();
+  this->cached_block_handle_id.clear();
+  this->caching_block.clear();
   this->cached_block_id.clear();
   this->read_record.clear();
+  delete thread_pool;
   return 0;
 }
 
@@ -149,7 +151,7 @@ int64_t SSDCache::read(const std::string &key, const IndexInfo &key_info, char* 
 
   int64_t check_threshold = 50;
   if (this->read_num > check_threshold) {
-  //fetching blocks from hdd and store it in ssd
+    //fetching blocks from hdd and store it in ssd
     this->read_record_lock.lock();
     std::map<std::int64_t, std::vector<std::int64_t>> read_record_sta;
     for (auto i : this->read_record) {
@@ -158,9 +160,8 @@ int64_t SSDCache::read(const std::string &key, const IndexInfo &key_info, char* 
     int64_t block_id_to_fetch = 0;
     for (auto block_bucket : read_record_sta) {
       for(auto candidate_block : block_bucket.second) {
-        if (this->cached_block.find(candidate_block) == this->cached_block.end()) {
+        if (this->cached_block.find(candidate_block) == this->cached_block.end())
           block_id_to_fetch = candidate_block;
-        }
       }
     }
     if (block_id_to_fetch != 0) {

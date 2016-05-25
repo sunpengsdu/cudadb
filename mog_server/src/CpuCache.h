@@ -27,7 +27,6 @@
 
 #include "./SSDCache.h"
 
-
 typedef boost::shared_mutex cpu_cache_rwmutex;
 typedef boost::shared_lock<cpu_cache_rwmutex> cpu_cache_readLock;
 typedef boost::unique_lock<cpu_cache_rwmutex> cpu_cache_writeLock;
@@ -52,13 +51,9 @@ public:
   int64_t page_num;
   std::atomic<int64_t> free_slab_num;
   //std::mutex cached_item_queue_lock;
-
   std::queue<int64_t> free_slabs;
-
-
   std::unordered_map<std::string, CPUCachedItem> cached_item;
   std::queue<std::string> cached_item_queue;
-
   char**  slabs;
   int64_t initial_flag = 0;
   static const int64_t slab_size[11];//KB
@@ -66,13 +61,8 @@ public:
   static CpuCache& singleton();
   int64_t initial(const int64_t page_size, const int64_t page_num);
   int64_t allocate_memory();
-
   int64_t read(const std::string& key, char *value);
-
-  int64_t insert(const std::string &key,
-                 const IndexInfo &central_index_info,
-                 char *value);
-
+  int64_t insert(const std::string &key, const IndexInfo &central_index_info, char *value);
   int64_t close();
 };
 
